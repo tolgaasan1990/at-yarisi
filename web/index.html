@@ -89,9 +89,9 @@ canvas{display:block}
 .menu-footer{color:rgba(255,255,255,.2);font-size:11px;margin-top:14px;letter-spacing:1px}
 
 /* Logo */
-.app-logo{width:120px;height:auto;filter:invert(1) sepia(1) saturate(3) hue-rotate(10deg) brightness(1.1) drop-shadow(0 0 12px rgba(255,215,0,.4));margin:0 auto 8px;display:block}
-.app-logo-sm{width:70px;height:auto;filter:invert(1) sepia(1) saturate(3) hue-rotate(10deg) brightness(1.1) drop-shadow(0 0 8px rgba(255,215,0,.3));margin:0 auto 4px;display:block}
-@media(max-width:600px){.app-logo{width:90px}.app-logo-sm{width:55px}}
+.app-logo{width:140px;height:auto;filter:invert(1) sepia(1) saturate(2) hue-rotate(10deg) brightness(1.2) drop-shadow(0 2px 20px rgba(255,215,0,.3));margin:0 auto 12px;display:block;mix-blend-mode:screen}
+.app-logo-sm{width:70px;height:auto;filter:invert(1) sepia(1) saturate(2) hue-rotate(10deg) brightness(1.2) drop-shadow(0 2px 12px rgba(255,215,0,.25));margin:0 auto 6px;display:block;mix-blend-mode:screen}
+@media(max-width:600px){.app-logo{width:110px}.app-logo-sm{width:55px}}
 
 /* Glow on panel */
 .menu-pn::after{content:'';position:absolute;bottom:-2px;left:15%;right:15%;height:3px;background:linear-gradient(90deg,transparent,rgba(233,69,96,.5),rgba(255,215,0,.5),rgba(52,152,219,.5),transparent);border-radius:50%;filter:blur(4px)}
@@ -152,16 +152,18 @@ canvas{display:block}
 <div id="ov-login" class="ov">
 <div class="pn menu-pn">
   <img src="logo.png" class="app-logo" alt="At Yarisi">
-  <h1>AT YARISI</h1>
-  <h2>GIRIS YAP</h2>
+  <div style="margin-bottom:20px">
+    <h1 style="font-size:22px;margin-bottom:2px">AT YARISI</h1>
+    <div style="color:#5a6a7a;font-size:11px;letter-spacing:4px;font-family:'Space Mono',monospace">HORSE RACING</div>
+  </div>
   <div class="menu-divider"></div>
-  <div style="margin:12px 0">
-    <div class="sr"><label>&#128100; Isim</label><input id="login-name" class="inp" type="text" placeholder="Ismin..." maxlength="15"></div>
-    <div class="sr"><label>&#128274; Sifre</label><input id="login-pass" class="inp" type="password" placeholder="****"></div>
+  <div style="margin:16px 0">
+    <div class="sr"><label style="font-size:13px">Isim</label><input id="login-name" class="inp" type="text" placeholder="Ismin..." maxlength="15"></div>
+    <div class="sr"><label style="font-size:13px">Sifre</label><input id="login-pass" class="inp" type="password" placeholder="****"></div>
   </div>
   <div id="login-err" style="color:#e94560;font-size:13px;min-height:20px"></div>
-  <button class="ab bs menu-go" onclick="G.login()">&#128275; GIRIS YAP</button>
-  <div class="menu-footer">v1.0 - Online Horse Racing</div>
+  <button class="ab bs menu-go" onclick="G.login()">GIRIS YAP</button>
+  <div class="menu-footer">v1.0</div>
 </div></div>
 
 <!-- LOBBY -->
