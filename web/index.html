@@ -376,7 +376,7 @@ const BETS=[50,100,200,500];
 const cv=document.getElementById('c'),cx=cv.getContext('2d');
 let W,H;
 let horses=[],money=1000,selHorse=-1,selBet=0,finishOrder=[];
-let raceState='idle',raceTime=0,countdownTime=3,finishX=0,rain=[];
+let raceState='idle',raceTime=0,countdownTime=3,finishX=0,rain=[],camX=0;
 function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;if(finishX<100)finishX=W*.88;}
 resize(); addEventListener('resize',resize);
 
@@ -744,7 +744,7 @@ function getOdds(s){return Math.round((8-6.5*(s/5))*10)/10}
 // RACE INIT
 // =========================================================
 function initRace(seeded){
-  horses=[];finishOrder=[];raceTime=0;
+  horses=[];finishOrder=[];raceTime=0;camX=0;
   const R=seeded?sRand:Math.random; // deterministik veya normal random
   const sm=CFG.track==='grass'?(CFG.weather==='sunny'?1:.9):(CFG.weather==='sunny'?.85:.75);
   finishX=Math.max(W*.88, 800);
@@ -858,6 +858,11 @@ function update(dt){
       if(h.x>=finishX){h.finished=true;h.finishTime=raceTime;finishOrder.push(h);h.finishPos=finishOrder.length;}
     });
     if(finishOrder.length>=horses.length){raceState='finished';setTimeout(showResults,700);}
+
+    // Kamera: lider ati takip et, ekranin %30'unda tut
+    let maxX=0;horses.forEach(h=>{if(h.x>maxX)maxX=h.x;});
+    const targetCam=Math.max(0,maxX-W*0.3);
+    camX+=(targetCam-camX)*0.08; // smooth follow
   }
   if(CFG.weather==='rainy')rain.forEach(r=>{r.x-=r.s*.3*60*dt;r.y+=r.s*60*dt;if(r.y>H){r.y=-20;r.x=Math.random()*W;}if(r.x<0)r.x=W;});
 }
@@ -866,7 +871,7 @@ function fmt(t){const m=t/60|0,s=t%60|0,c=(t*100)%100|0;return`${(m+'').padStart
 // =========================================================
 // DRAW
 // =========================================================
-function draw(){cx.clearRect(0,0,W,H);drawBg();drawTrack();drawHorses();drawFinish();drawFx();}
+function draw(){cx.clearRect(0,0,W,H);drawBg();cx.save();cx.translate(-camX,0);drawTrack();drawHorses();drawFinish();cx.restore();drawFx();}
 
 function drawBg(){
   let g;
@@ -896,14 +901,16 @@ function drawBg(){
 function drawTrack(){
   const tt=tTop(),tb=tBot(),lh=(tb-tt)/CFG.count;
   const mc=CFG.track==='grass'?'#3a7a30':'#C4A265';const ac=CFG.track==='grass'?'#347028':'#B8945A';
-  for(let i=0;i<CFG.count;i++){cx.fillStyle=i%2===0?mc:ac;cx.fillRect(0,tt+i*lh,W,lh);}
-  cx.strokeStyle='rgba(255,255,255,.6)';cx.lineWidth=2.5;cx.beginPath();cx.moveTo(0,tt);cx.lineTo(W,tt);cx.moveTo(0,tb);cx.lineTo(W,tb);cx.stroke();
-  cx.fillStyle='#fff';for(let x=25;x<W;x+=50){cx.fillRect(x,tt-6,2.5,8);cx.fillRect(x,tb-2,2.5,8);}
+  const tl=camX,tr=camX+W+100,tw=finishX+200;
+  for(let i=0;i<CFG.count;i++){cx.fillStyle=i%2===0?mc:ac;cx.fillRect(tl-50,tt+i*lh,tw,lh);}
+  cx.strokeStyle='rgba(255,255,255,.6)';cx.lineWidth=2.5;cx.beginPath();cx.moveTo(tl-50,tt);cx.lineTo(tw,tt);cx.moveTo(tl-50,tb);cx.lineTo(tw,tb);cx.stroke();
+  cx.fillStyle='#fff';for(let x=25;x<tw;x+=50){cx.fillRect(x,tt-6,2.5,8);cx.fillRect(x,tb-2,2.5,8);}
   const fc=['#e63946','#ffd700','#3b82f6','#22c55e','#ff8c00'];
-  for(let x=12;x<W;x+=14){cx.fillStyle=fc[(x/14|0)%5];cx.beginPath();cx.moveTo(x,tt-7);cx.lineTo(x+5,tt-7);cx.lineTo(x+2.5,tt);cx.fill();}
-  for(let i=0;i<CFG.count;i++){const cy=tt+i*lh+lh/2;cx.fillStyle='rgba(255,255,255,.75)';cx.beginPath();cx.arc(22,cy,12,0,Math.PI*2);cx.fill();cx.fillStyle='#333';cx.font='bold 14px sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(i+1,22,cy);}
+  for(let x=12;x<tw;x+=14){cx.fillStyle=fc[(x/14|0)%5];cx.beginPath();cx.moveTo(x,tt-7);cx.lineTo(x+5,tt-7);cx.lineTo(x+2.5,tt);cx.fill();}
+  // Lane numbers follow camera
+  for(let i=0;i<CFG.count;i++){const cy=tt+i*lh+lh/2;cx.fillStyle='rgba(255,255,255,.75)';cx.beginPath();cx.arc(camX+22,cy,12,0,Math.PI*2);cx.fill();cx.fillStyle='#333';cx.font='bold 14px sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(i+1,camX+22,cy);}
   cx.strokeStyle='rgba(255,255,255,.4)';cx.lineWidth=1.5;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(82,tt);cx.lineTo(82,tb);cx.stroke();cx.setLineDash([]);
-  cx.fillStyle=CFG.track==='grass'?'#2d6b25':'#a08050';cx.fillRect(0,tb,W,H-tb);
+  cx.fillStyle=CFG.track==='grass'?'#2d6b25':'#a08050';cx.fillRect(tl-50,tb,tw,H-tb);
 }
 
 // Pre-render each horse+frame into offscreen canvases for performance
