@@ -987,7 +987,7 @@ function buildNameInputs(){
   const el=$('name-inputs');el.innerHTML='';
   for(let i=0;i<CFG.count;i++){
     const row=document.createElement('div');row.className='name-row';
-    row.innerHTML=`<div class="hc" style="background:${JOCK_C[i]}"></div><span class="name-num">${i+1}.</span><input type="text" maxlength="15" placeholder="${NAMES[i]}" value="${NAMES[i]}" data-idx="${i}">`;
+    row.innerHTML=`<div class="hc" style="background:${JOCK_C[colorOrder[i%10]]}"></div><span class="name-num">${i+1}.</span><input type="text" maxlength="15" placeholder="${NAMES[i]}" value="${NAMES[i]}" data-idx="${i}">`;
     const inp=row.querySelector('input');
     inp.onchange=()=>{playerNames=readNameInputs();initRace(false);buildHL();};
     el.appendChild(row);
@@ -1002,7 +1002,7 @@ function readNameInputs(){
 function buildHL(){
   const el=$('hlist');el.innerHTML='';
   for(let i=0;i<CFG.count;i++){const o=getOdds(horses[i].baseSpeed);const d=document.createElement('div');d.className='hi';
-    d.innerHTML=`<div class="hc" style="background:${JOCK_C[i]}"></div><span class="hn">${i+1}. ${playerNames[i]||NAMES[i]}</span><span class="ho">x${o.toFixed(1)}</span>`;
+    d.innerHTML=`<div class="hc" style="background:${JOCK_C[colorOrder[i%10]]}"></div><span class="hn">${i+1}. ${playerNames[i]||NAMES[i]}</span><span class="ho">x${o.toFixed(1)}</span>`;
     d.onclick=(idx=>()=>{document.querySelectorAll('.hi').forEach((x,j)=>x.classList.toggle('sel',j===idx));selHorse=idx;updI();})(i);
     el.appendChild(d);}
 }
@@ -1024,8 +1024,16 @@ function getOdds(s){return Math.round((8-6.5*(s/5))*10)/10}
 // =========================================================
 // RACE INIT
 // =========================================================
+var colorOrder=[0,1,2,3,4,5,6,7,8,9]; // renk indeks sirasi
+function shuffleColors(){
+  colorOrder=[0,1,2,3,4,5,6,7,8,9];
+  for(var i=colorOrder.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1));
+    var tmp=colorOrder[i];colorOrder[i]=colorOrder[j];colorOrder[j]=tmp;
+  }
+}
 function initRace(seeded){
-  horses=[];finishOrder=[];raceTime=0;camX=0;
+  horses=[];finishOrder=[];raceTime=0;camX=0;shuffleColors();
   const R=seeded?sRand:Math.random; // deterministik veya normal random
   const sm=CFG.track==='grass'?(CFG.weather==='sunny'?1:.9):(CFG.weather==='sunny'?.85:.75);
   finishX=Math.max(W*.88, 800);
@@ -1140,10 +1148,13 @@ function update(dt){
     });
     if(finishOrder.length>=horses.length){raceState='finished';setTimeout(showResults,700);}
 
-    // Kamera: lider ati takip et, ekranin %30'unda tut
-    let maxX=0;horses.forEach(h=>{if(h.x>maxX)maxX=h.x;});
-    const targetCam=Math.max(0,maxX-W*0.3);
-    camX+=(targetCam-camX)*0.08; // smooth follow
+    // Kamera: grubu takip et, mumkun oldugunca genis goster
+    let maxX=0,minX=999999;
+    horses.forEach(h=>{if(!h.finished){if(h.x>maxX)maxX=h.x;if(h.x<minX)minX=h.x;}});
+    // Grubun ortasini hedefle, ama lider ekranda kalsin
+    var groupCenter=(maxX+minX)/2;
+    var targetCam=Math.max(0,Math.min(groupCenter-W*0.4, maxX-W*0.25));
+    camX+=(targetCam-camX)*0.06; // smooth follow
 
     // Spiker text
     var prog=(maxX-90)/(finishX-90);
@@ -1458,7 +1469,7 @@ function drawHorses(){
 
   horses.forEach((h,i)=>{
     const cy = tt + i*lh + lh*0.5;
-    const sheet = colorSheets[i];
+    const sheet = colorSheets[colorOrder[i%10]];
     if(!sheet) return;
 
     // Gallop frame -> row,col in spritesheet
