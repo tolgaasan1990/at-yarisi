@@ -7,6 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/89/three.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -15,19 +16,8 @@
 body{background:#0a0a1a;font-family:'Space Mono',monospace;overflow:hidden;user-select:none}
 canvas{display:block}
 .ov{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:10;overflow-y:auto;padding:20px 0}
-.etheral-wrap{position:fixed;top:0;left:0;width:100vw;height:100vh;overflow:hidden;pointer-events:none;z-index:11}
-.etheral-blob{position:absolute;border-radius:50%;opacity:.15;will-change:transform}
-.etheral-blob-1{width:60vw;height:60vw;background:radial-gradient(circle,#e94560,transparent 70%);top:-15%;right:-10%;animation:eb1 20s ease-in-out infinite}
-.etheral-blob-2{width:50vw;height:50vw;background:radial-gradient(circle,#ffd700,transparent 70%);bottom:-10%;left:-10%;animation:eb2 25s ease-in-out infinite}
-.etheral-blob-3{width:45vw;height:45vw;background:radial-gradient(circle,#3b82f6,transparent 70%);top:30%;left:40%;animation:eb3 22s ease-in-out infinite}
-.etheral-blob-4{width:55vw;height:55vw;background:radial-gradient(circle,#8b5cf6,transparent 70%);top:10%;left:-5%;animation:eb4 18s ease-in-out infinite}
-.etheral-blob-5{width:40vw;height:40vw;background:radial-gradient(circle,#22c55e,transparent 70%);bottom:5%;right:5%;animation:eb5 24s ease-in-out infinite}
-@keyframes eb1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-8vw,5vh) scale(1.2)}66%{transform:translate(5vw,-8vh) scale(.85)}}
-@keyframes eb2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(6vw,-6vh) scale(1.15)}66%{transform:translate(-4vw,7vh) scale(.9)}}
-@keyframes eb3{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-7vw,-5vh) scale(1.25)}66%{transform:translate(8vw,4vh) scale(.8)}}
-@keyframes eb4{0%,100%{transform:translate(0,0) scale(.9)}33%{transform:translate(9vw,6vh) scale(1.1)}66%{transform:translate(-5vw,-7vh) scale(1)}}
-@keyframes eb5{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-6vw,8vh) scale(1.2)}66%{transform:translate(7vw,-5vh) scale(.85)}}
-.etheral-noise{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:11;opacity:.035;background:url('data:image/svg+xml,<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%25" height="100%25" filter="url(%23n)"/></svg>');background-size:180px}
+#shader-bg{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:11;pointer-events:none;opacity:.35}
+#shader-bg canvas{width:100%!important;height:100%!important}
 .ov.h{opacity:0;pointer-events:none;transition:opacity .4s}
 .pn{background:linear-gradient(160deg,#0c1929 0%,#162544 50%,#1a2d52 100%);border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:36px 48px;color:#fff;text-align:center;min-width:0;width:90vw;max-width:620px;box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.05);position:relative;overflow:hidden}
 @media(max-width:600px){.pn{padding:24px 20px;border-radius:18px;width:94vw}.lobby-cards{flex-direction:column}.lobby-card{padding:14px 12px}.lobby-pn{padding:28px 20px 20px!important;min-width:0!important}}
@@ -146,14 +136,7 @@ canvas{display:block}
 </head>
 <body>
 <canvas id="c"></canvas>
-<div class="etheral-wrap" id="etheral-wrap">
-  <div class="etheral-blob etheral-blob-1"></div>
-  <div class="etheral-blob etheral-blob-2"></div>
-  <div class="etheral-blob etheral-blob-3"></div>
-  <div class="etheral-blob etheral-blob-4"></div>
-  <div class="etheral-blob etheral-blob-5"></div>
-</div>
-<div class="etheral-noise" id="etheral-noise"></div>
+<div id="shader-bg"></div>
 <div id="ib" class="h"></div>
 <div id="hud" class="h"><div id="timer">00:00:00</div></div>
 <div id="cd" class="h">3</div>
@@ -307,6 +290,56 @@ try {
 } catch(e) { console.warn('Firebase init failed:', e.message); }
 
 // =========================================================
+// SHADER BACKGROUND (Three.js WebGL)
+// =========================================================
+(function(){
+  if(!window.THREE) return;
+  var T=window.THREE, container=$('shader-bg');
+  if(!container) return;
+  var camera=new T.Camera();camera.position.z=1;
+  var scene=new T.Scene();
+  var geo=new T.PlaneBufferGeometry(2,2);
+  var uniforms={time:{type:'f',value:1.0},resolution:{type:'v2',value:new T.Vector2()}};
+  var mat=new T.ShaderMaterial({
+    uniforms:uniforms,
+    vertexShader:'void main(){gl_Position=vec4(position,1.0);}',
+    fragmentShader:`
+      precision highp float;
+      uniform vec2 resolution;
+      uniform float time;
+      float random(in float x){return fract(sin(x)*1e4);}
+      void main(void){
+        vec2 uv=(gl_FragCoord.xy*2.0-resolution.xy)/min(resolution.x,resolution.y);
+        vec2 s=vec2(4.0,2.0);vec2 ss=vec2(256,256);
+        uv.x=floor(uv.x*ss.x/s.x)/(ss.x/s.x);
+        uv.y=floor(uv.y*ss.y/s.y)/(ss.y/s.y);
+        float t=time*0.06+random(uv.x)*0.4;
+        float lw=0.0008;
+        vec3 color=vec3(0.0);
+        for(int j=0;j<3;j++){
+          for(int i=0;i<5;i++){
+            color[j]+=lw*float(i*i)/abs(fract(t-0.01*float(j)+float(i)*0.01)*1.0-length(uv));
+          }
+        }
+        gl_FragColor=vec4(color[2],color[1],color[0],1.0);
+      }`
+  });
+  scene.add(new T.Mesh(geo,mat));
+  var renderer=new T.WebGLRenderer();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  container.appendChild(renderer.domElement);
+  function onResize(){
+    var w=window.innerWidth,h=window.innerHeight;
+    renderer.setSize(w,h);
+    uniforms.resolution.value.x=renderer.domElement.width;
+    uniforms.resolution.value.y=renderer.domElement.height;
+  }
+  onResize();window.addEventListener('resize',onResize);
+  function anim(){requestAnimationFrame(anim);uniforms.time.value+=0.05;renderer.render(scene,camera);}
+  anim();
+})();
+
+// =========================================================
 // SEEDED RANDOM (deterministik yaris icin)
 // =========================================================
 let _seed = 12345;
@@ -415,8 +448,8 @@ document.querySelectorAll('.ops').forEach(g=>{
 // =========================================================
 const G={};
 const hideAll=()=>{['ov-login','ov-lobby','ov-room','ov-menu','ov-bet','ov-res','hud','cd','ib'].forEach(id=>{try{hide(id)}catch(e){}});};
-function showEtheral(){$('etheral-wrap').style.display='';$('etheral-noise').style.display='';}
-function hideEtheral(){$('etheral-wrap').style.display='none';$('etheral-noise').style.display='none';}
+function showEtheral(){$('shader-bg').style.display='';}
+function hideEtheral(){$('shader-bg').style.display='none';}
 
 // === PRESENCE ===
 let presenceRef=null, onlineCountRef=null, onlineListener=null;
