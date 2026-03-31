@@ -1221,22 +1221,23 @@ function drawFx(){
       cx.fillStyle=g;cx.beginPath();cx.moveTo(lx-4,tt);cx.lineTo(lx-50,tb);cx.lineTo(lx+50,tb);cx.lineTo(lx+4,tt);cx.fill();}}
 }
 
+function laneH(){
+  // Serit yuksekligi: min 50px (10 at mobil), max 160px (2 at)
+  var maxH = H < 500 ? 120 : 160; // mobilde daha kucuk max
+  var minH = H < 500 ? 40 : 50;
+  var available = H * 0.62; // ekranin %62'si pist icin
+  var natural = available / CFG.count;
+  return Math.max(minH, Math.min(natural, maxH));
+}
 function tTop(){
-  // Az atta pistin ortada kalmasini sagla
-  var trackH = Math.min((H*.92 - H*.30), CFG.count * 180);
+  // Pisti dikey ortala
+  var trackH = CFG.count * laneH();
   var center = (H - trackH) / 2;
-  return Math.max(center, H*.28);
+  // En az %25'ten basla (gokyuzu icin), en fazla %45
+  return Math.max(H * 0.25, Math.min(center, H * 0.45));
 }
 function tBot(){
-  // Ekranin %92'sini gecmesin
-  const maxBot = H*.92;
-  const natural = tTop() + CFG.count * laneH();
-  return Math.min(natural, maxBot);
-}
-function laneH(){
-  // Serit yuksekligi at sayisina gore, max 180px
-  const available = H*.92 - tTop();
-  return Math.min(available / CFG.count, 180);
+  return tTop() + CFG.count * laneH();
 }
 
 // =========================================================
