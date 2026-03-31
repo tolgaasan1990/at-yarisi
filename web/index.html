@@ -900,7 +900,7 @@ function fmt(t){const m=t/60|0,s=t%60|0,c=(t*100)%100|0;return`${(m+'').padStart
 // =========================================================
 // DRAW
 // =========================================================
-function draw(){cx.clearRect(0,0,W,H);drawBg();cx.save();cx.translate(-camX,0);drawTrack();drawHorses();drawFinish();cx.restore();drawFx();}
+function draw(){if(raceState!=='countdown'&&raceState!=='racing')return;cx.clearRect(0,0,W,H);drawBg();cx.save();cx.translate(-camX,0);drawTrack();drawHorses();drawFinish();cx.restore();drawFx();}
 
 function drawBg(){
   let g;
@@ -1219,7 +1219,7 @@ function laneH(){
 // RESULTS
 // =========================================================
 function showResults(){
-  hide('hud');hide('ib');show('ov-res');showEtheral();
+  raceState='idle';hide('hud');hide('ib');clearCanvas();show('ov-res');showEtheral();
 
   // Online modda finished state yaz
   if(OL.mode==='online'&&OL.isHost&&OL.roomRef){
