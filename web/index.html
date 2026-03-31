@@ -958,14 +958,16 @@ function updateRoomUI(data,code){
 }
 
 function startOnlineRace(data){
+  // Minimum 2 oyuncu kontrolu
+  const players=data.players?Object.values(data.players):[];
+  if(players.length<2){return;}
+
   OL.mode='online';
   hideAll();show('hud');
   $('timer').textContent='00:00:00';show('ib');
   const s=data.settings||{};
   CFG.weather=s.weather||'sunny';CFG.time=s.time||'day';CFG.track=s.track||'grass';CFG.duration=60;
 
-  // Oyuncu sayisi = at sayisi
-  const players=data.players?Object.values(data.players):[];
   CFG.count=players.length;
 
   // Oyuncu isimlerini ata ata
@@ -987,7 +989,11 @@ G.toggleReady=()=>{
   db.ref('rooms/'+OL.roomCode+'/players/'+OL.playerName+'/ready').set(!cur);
 };
 G.startOnlineRace=()=>{
-  if(!OL.isHost||!OL.roomRef)return;
+  if(!OL.isHost||!OL.roomRef||!OL.roomData)return;
+  // Minimum 2 kisi ve herkes hazir olmali
+  var players=OL.roomData.players?Object.values(OL.roomData.players):[];
+  if(players.length<2){alert('En az 2 oyuncu gerekli!');return;}
+  if(!players.every(function(p){return p.ready;})){alert('Herkes hazir degil!');return;}
   OL.roomRef.update({state:'countdown',seed:Math.random()*2147483647|0});
 };
 // === CHAT ===
