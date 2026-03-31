@@ -301,7 +301,7 @@ try {
 // =========================================================
 // SHADER BACKGROUND - Neon Wave (Three.js WebGL)
 // =========================================================
-(function(){
+(function(){try{
   if(!window.THREE) return;
   var T=window.THREE, container=document.getElementById('bg-effect');
   if(!container) return;
@@ -319,7 +319,7 @@ try {
     distortion:{value:0.05}
   };
   var pos=new T.BufferAttribute(new Float32Array([-1,-1,0,1,-1,0,-1,1,0,1,-1,0,-1,1,0,1,1,0]),3);
-  var geo=new T.BufferGeometry();geo.setAttribute('position',pos);
+  var geo=new T.BufferGeometry();if(geo.setAttribute)geo.setAttribute('position',pos);else geo.addAttribute('position',pos);
   var mat=new T.RawShaderMaterial({
     vertexShader:'attribute vec3 position;void main(){gl_Position=vec4(position,1.0);}',
     fragmentShader:`precision highp float;
@@ -344,7 +344,7 @@ try {
   onResize();window.addEventListener('resize',onResize);
   function anim(){requestAnimationFrame(anim);uniforms.time.value+=0.01;renderer.render(scene,camera);}
   anim();
-})();
+}catch(e){console.warn('Shader bg error:',e);}})();
 
 // =========================================================
 // SEEDED RANDOM (deterministik yaris icin)
