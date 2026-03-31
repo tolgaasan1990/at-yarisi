@@ -479,6 +479,13 @@ function goOnline(){
   presenceRef=db.ref('presence/'+OL.playerName);
   presenceRef.set(true);
   presenceRef.onDisconnect().remove();
+  // Mobilde geri gelince presence'i yenile
+  db.ref('.info/connected').on('value',function(snap){
+    if(snap.val()===true&&presenceRef&&OL.loggedIn){
+      presenceRef.set(true);
+      presenceRef.onDisconnect().remove();
+    }
+  });
 }
 function goOffline(){
   if(presenceRef){presenceRef.remove();presenceRef=null;}
@@ -602,8 +609,26 @@ function listenRoom(code){
   });
   OL.listeners.push({off:()=>ref.off('value',listener)});
 
-  // Disconnect'te oyuncuyu sil
-  db.ref('rooms/'+code+'/players/'+OL.playerName).onDisconnect().remove();
+  // Disconnect'te oyuncuyu sil (sadece gercek cikislarda)
+  var playerRef=db.ref('rooms/'+code+'/players/'+OL.playerName);
+  playerRef.onDisconnect().remove();
+
+  // Mobilde sekme degisince baglanti kopabilir - geri gelince rejoin
+  var rejoinHandler=function(){
+    if(document.visibilityState==='visible'&&OL.roomCode===code){
+      // Baglanti canlandiginda oyuncuyu tekrar ekle
+      playerRef.once('value',function(snap){
+        if(!snap.val()){
+          // Oyuncu silinmis, tekrar ekle
+          var wasReady=OL.roomData?.players?.[OL.playerName]?.ready||false;
+          playerRef.set({name:OL.playerName,ready:wasReady,lane:0});
+          playerRef.onDisconnect().remove();
+        }
+      });
+    }
+  };
+  document.addEventListener('visibilitychange',rejoinHandler);
+  OL.listeners.push({off:function(){document.removeEventListener('visibilitychange',rejoinHandler);}});
 }
 
 function updateRoomUI(data,code){
