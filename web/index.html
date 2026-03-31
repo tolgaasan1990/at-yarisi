@@ -19,6 +19,8 @@ body{background:#0a0a1a;font-family:'Space Mono',monospace;overflow:hidden;user-
 canvas{display:block}
 .ov{position:fixed;inset:0;display:flex;justify-content:center;align-items:flex-start;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:10;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:30px 0}
 #bg-effect{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:11;pointer-events:none;opacity:.4}
+#spiker-text{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:6;color:#fff;font:700 13px 'Space Mono',monospace;text-align:center;max-width:90vw;padding:8px 18px;background:rgba(0,0,0,.7);border-radius:10px;border:1px solid rgba(255,215,0,.2);pointer-events:none;opacity:0;transition:opacity .3s}
+#spiker-text.show{opacity:1}
 #bg-effect canvas{display:block;width:100%!important;height:100%!important}
 .ov.h{opacity:0;pointer-events:none;transition:opacity .4s}
 .pn{background:linear-gradient(160deg,#0c1929 0%,#162544 50%,#1a2d52 100%);border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:36px 48px;color:#fff;text-align:center;min-width:0;width:90vw;max-width:620px;margin:auto 0;flex-shrink:0;box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.05);position:relative;overflow:hidden}
@@ -165,6 +167,8 @@ canvas{display:block}
   <button class="ab bs menu-go" onclick="G.login()">GIRIS YAP</button>
   <div class="menu-footer">v1.0</div>
 </div></div>
+
+<div id="spiker-text"></div>
 
 <!-- LOBBY -->
 <div id="ov-lobby" class="ov h">
@@ -411,19 +415,15 @@ function spikerInit(){
   if(!spikerState.voice) speechSynthesis.onvoiceschanged=findVoice;
 }
 
-function spikerSpeak(text,rate){
-  if(spikerState.speaking||!window.speechSynthesis) return;
-  speechSynthesis.cancel();
-  var u=new SpeechSynthesisUtterance(text);
-  u.lang='tr-TR';
-  u.rate=rate||1.1;
-  u.pitch=1.05;
-  u.volume=1;
-  if(spikerState.voice) u.voice=spikerState.voice;
+function spikerSpeak(text){
+  if(spikerState.speaking) return;
   spikerState.speaking=true;
-  u.onend=function(){spikerState.speaking=false;};
-  u.onerror=function(){spikerState.speaking=false;};
-  speechSynthesis.speak(u);
+  var el=document.getElementById('spiker-text');
+  if(el){el.textContent=text;el.classList.add('show');}
+  setTimeout(function(){
+    spikerState.speaking=false;
+    if(el) el.classList.remove('show');
+  },4000);
 }
 
 function spikerGetTop4(){
@@ -463,35 +463,21 @@ function spikerUpdate(prog){
     var names=spikerGetTop4();
     var tmpl=spikerPick(SPIKER[phase]);
     var text=spikerFillTemplate(tmpl,names);
-    var rate=1.1+prog*0.4; // heyecan artinca hizlan
-    spikerSpeak(text,rate);
+    spikerSpeak(text);
     spikerState.lastPhase=phase;
     spikerState.lastTime=now;
   }
 }
 
 function spikerFinish(){
-  if(!window.speechSynthesis) return;
   var top=finishOrder.slice(0,3).map(function(h){return h.name;});
-  // Yakin finish kontrolu
   var yakin=finishOrder.length>=2&&Math.abs(finishOrder[0].finishTime-finishOrder[1].finishTime)<1;
-  setTimeout(function(){
-    speechSynthesis.cancel();
-    spikerState.speaking=false;
-    var text;
-    if(yakin){
-      text=spikerFillTemplate(spikerPick(SPIKER.yakin_finish),top);
-      spikerSpeak(text,1.3);
-      setTimeout(function(){
-        spikerState.speaking=false;
-        text=spikerFillTemplate(spikerPick(SPIKER.sonuc),top);
-        spikerSpeak(text,1.1);
-      },3500);
-    } else {
-      text=spikerFillTemplate(spikerPick(SPIKER.sonuc),top);
-      spikerSpeak(text,1.15);
-    }
-  },500);
+  spikerState.speaking=false;
+  if(yakin){
+    spikerSpeak(spikerFillTemplate(spikerPick(SPIKER.yakin_finish),top));
+  } else {
+    spikerSpeak(spikerFillTemplate(spikerPick(SPIKER.sonuc),top));
+  }
 }
 
 // =========================================================
@@ -724,7 +710,7 @@ G.logout=()=>{goOffline();stopListenOnlineCount();OL.loggedIn=false;OL.playerNam
 
 // === LOBBY ===
 function clearCanvas(){cx.fillStyle='#0a0a1a';cx.fillRect(0,0,W,H);}
-G.showLobby=()=>{hideAll();clearCanvas();show('ov-lobby');$('lobby-welcome').textContent='Hosgeldin, '+OL.playerName+'!';listenOnlineCount();};
+G.showLobby=()=>{hideAll();clearCanvas();stopAllAudio();show('ov-lobby');$('lobby-welcome').textContent='Hosgeldin, '+OL.playerName+'!';listenOnlineCount();};
 
 // === ONLINE ===
 G.createOnlineRoom=()=>{
@@ -929,7 +915,7 @@ document.querySelectorAll('[data-rk]').forEach(g=>{
 // === OFFLINE (TEK OYUNCU) ===
 let playerNames=[]; // online: oyuncu isimleri, offline: at isimleri
 
-G.showMenu=()=>{hideAll();clearCanvas();show('ov-menu');OL.mode='offline';raceState='idle';playerNames=[];};
+G.showMenu=()=>{hideAll();clearCanvas();stopAllAudio();show('ov-menu');OL.mode='offline';raceState='idle';playerNames=[];};
 G.showBet=()=>{hideAll();show('ov-bet');selHorse=-1;selBet=0;
   $('mny').textContent=money+' TL';$('gobtn').disabled=true;$('si').textContent='At ve bahis miktari sec';
   // Isim inputlarini olustur
@@ -1045,7 +1031,7 @@ setInterval(()=>{
 function update(dt){
   if(raceState==='countdown'){countdownTime-=dt;const el=$('cd');
     if(countdownTime>0)el.textContent=Math.ceil(countdownTime);
-    else{el.textContent='BASLA!';if(countdownTime<-.5){hide('cd');raceState='racing';raceTime=0;initCrowdAudio();spikerInit();}}}
+    else{el.textContent='BASLA!';if(countdownTime<-.5){hide('cd');raceState='racing';raceTime=0;spikerInit();}}}
   if(raceState==='racing'){
     raceTime+=dt;$('timer').textContent=fmt(raceTime);
     const dist=finishX-90,rate=dist/CFG.duration,avg=3.1;
@@ -1122,12 +1108,8 @@ function update(dt){
     const targetCam=Math.max(0,maxX-W*0.3);
     camX+=(targetCam-camX)*0.08; // smooth follow
 
-    // Crowd ses + spiker
+    // Spiker text
     var prog=(maxX-90)/(finishX-90);
-    if(prog>0.5){
-      var intensity=Math.min(1,(prog-0.5)/0.5);
-      startCrowdCheer(intensity);
-    }
     spikerUpdate(prog);
   }
   if(CFG.weather==='rainy')rain.forEach(r=>{r.x-=r.s*.3*60*dt;r.y+=r.s*60*dt;if(r.y>H){r.y=-20;r.x=Math.random()*W;}if(r.x<0)r.x=W;});
@@ -1511,8 +1493,17 @@ function tBot(){
 // =========================================================
 // RESULTS
 // =========================================================
+function stopAllAudio(){
+  stopCrowdCheer();
+  if(crowdNode){try{crowdNode.stop();}catch(e){}crowdNode=null;}
+  if(crowdGain){crowdGain=null;}
+  // Spiker text gizle
+  spikerState.speaking=false;
+  var el=document.getElementById('spiker-text');
+  if(el){el.classList.remove('show');el.textContent='';}
+}
 function showResults(){
-  raceState='idle';hide('hud');hide('ib');clearCanvas();show('ov-res');showEtheral();stopCrowdCheer();
+  raceState='idle';hide('hud');hide('ib');clearCanvas();show('ov-res');showEtheral();stopAllAudio();
 
   // Online modda finished state yaz
   if(OL.mode==='online'&&OL.isHost&&OL.roomRef){
