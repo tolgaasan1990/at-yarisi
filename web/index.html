@@ -941,14 +941,52 @@ function drawBg(){
     cx.fillStyle='rgba(255,255,220,.12)';cx.beginPath();cx.arc(W*.82,H*.08,45,0,Math.PI*2);cx.fill();cx.fillStyle='#FFFDE0';cx.beginPath();cx.arc(W*.82,H*.08,18,0,Math.PI*2);cx.fill();}
   else if(CFG.weather!=='rainy'){cx.fillStyle='rgba(255,255,255,.75)';[[.12,.08],[.38,.06],[.62,.1],[.85,.05]].forEach(([px,py])=>{const x=W*px,y=H*py;cx.beginPath();cx.arc(x,y,22,0,Math.PI*2);cx.arc(x+18,y-6,17,0,Math.PI*2);cx.arc(x-15,y+2,15,0,Math.PI*2);cx.fill();});}
   else{cx.fillStyle='rgba(50,60,70,.85)';for(let i=0;i<6;i++){const x=W*(.08+i*.17),y=H*.06;cx.beginPath();cx.arc(x,y,30,0,Math.PI*2);cx.arc(x+22,y-8,24,0,Math.PI*2);cx.arc(x-18,y+4,20,0,Math.PI*2);cx.fill();}}
-  // Grandstands
-  [.12,.8].forEach(px=>{const x=W*px,y=H*.32,w=W*.13,h=H*.09;
-    cx.fillStyle=CFG.time==='night'?'#2a2a2a':'#8a8a8a';cx.fillRect(x-w/2,y,w,h);
-    cx.fillStyle=CFG.time==='night'?'#1a1a1a':'#666';cx.fillRect(x-w/2-5,y-5,w+10,7);
-    for(let r=0;r<4;r++)for(let c=0;c<10;c++){cx.fillStyle=['#2a2a2a','#e63946','#457b9d','#f4a261','#2a9d8f','#e9c46a','#555','#888'][(r*10+c)%8];cx.beginPath();cx.arc(x-w*.44+c*(w*.88/9),y+h*.15+r*h*.22,2.5,Math.PI,0);cx.fill();}
-    const fc=['#e63946','#ffd700','#3b82f6','#a855f7','#22c55e'];
-    for(let i=0;i<Math.floor(w/8);i++){cx.fillStyle=fc[i%5];const fx=x-w/2+i*8+4;cx.beginPath();cx.moveTo(fx,y-1);cx.lineTo(fx+4,y-1);cx.lineTo(fx+2,y+5);cx.fill();}
-    ['#e63946','#ffd700','#3b82f6'].forEach((c,i)=>{const fx=x-w*.3+i*(w*.3);cx.fillStyle='#888';cx.fillRect(fx,y-18,2,15);cx.fillStyle=c;cx.fillRect(fx+2,y-18,9,6);});
+  // Grandstands (professional)
+  var night=CFG.time==='night';
+  [.12,.85].forEach(function(px){
+    var gx=W*px, gy=tTop()-8, gw=W*.11, gh=tTop()*.28;
+    gy=gy-gh;
+    // Ana yapi - beton
+    var wallC=night?'#2a2e35':'#d4cec5';
+    var wallD=night?'#22262c':'#b8b2a8';
+    cx.fillStyle=wallC;
+    cx.fillRect(gx-gw/2,gy,gw,gh);
+    // Katlar (3 kat)
+    for(var k=0;k<3;k++){
+      var ky=gy+k*(gh/3);var kh=gh/3;
+      // Kat ayirici cizgi
+      cx.fillStyle=night?'#1e2228':'#a09888';
+      cx.fillRect(gx-gw/2,ky,gw,1.5);
+      // Seyirciler (her katta)
+      var cols=Math.floor(gw/7);
+      for(var c=0;c<cols;c++){
+        var sx=gx-gw/2+4+c*7;
+        var sy=ky+kh*0.3+k*2;
+        // Kafa
+        var hc=['#f4d0a8','#d4a87c','#8b6c50','#f0c090','#c49060','#e8b888'][(k*cols+c)%6];
+        cx.fillStyle=hc;
+        cx.beginPath();cx.arc(sx,sy,2.2,0,Math.PI*2);cx.fill();
+        // Govde (renkli tshirt)
+        var tc=['#e63946','#3b82f6','#22c55e','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#fff'][(k*cols+c)%8];
+        cx.fillStyle=tc;
+        cx.fillRect(sx-2,sy+2,4,4);
+      }
+    }
+    // Cati
+    cx.fillStyle=night?'#1a1e24':'#8b7355';
+    cx.beginPath();
+    cx.moveTo(gx-gw/2-8,gy);
+    cx.lineTo(gx,gy-14);
+    cx.lineTo(gx+gw/2+8,gy);
+    cx.closePath();cx.fill();
+    // Cati kenari
+    cx.fillStyle=night?'#2a2e35':'#a09080';
+    cx.fillRect(gx-gw/2-8,gy-1,gw+16,3);
+    // Destek kolonlari
+    cx.fillStyle=night?'#333':'#999';
+    cx.fillRect(gx-gw/2+2,gy,3,gh);
+    cx.fillRect(gx+gw/2-5,gy,3,gh);
+    cx.fillRect(gx-1,gy,3,gh);
   });
 }
 
