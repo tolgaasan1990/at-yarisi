@@ -1555,9 +1555,10 @@ function stopAllAudio(){
 function showResults(){
   raceState='idle';hide('hud');hide('ib');clearCanvas();show('ov-res');showEtheral();stopAllAudio();
 
-  // Online modda finished state yaz
+  // Online modda finished state yaz + 30sn sonra odayi temizle
   if(OL.mode==='online'&&OL.isHost&&OL.roomRef){
     OL.roomRef.update({state:'finished'});
+    setTimeout(function(){if(OL.roomCode){db.ref('rooms/'+OL.roomCode).remove();}},30000);
   }
 
   $('r-time').textContent='Sure: '+fmt(raceTime);
