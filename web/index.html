@@ -16,9 +16,18 @@ body{background:#0a0a1a;font-family:'Space Mono',monospace;overflow:hidden;user-
 canvas{display:block}
 .ov{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:10;overflow-y:auto;padding:20px 0}
 .etheral-wrap{position:fixed;top:0;left:0;width:100vw;height:100vh;overflow:hidden;pointer-events:none;z-index:9}
-.etheral-distort{position:absolute;top:-100px;left:-100px;right:-100px;bottom:-100px;filter:url(#etheral-filter) blur(4px)}
-.etheral-mask{position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(128,128,128,1);-webkit-mask-image:url('https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png');mask-image:url('https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png');-webkit-mask-size:cover;mask-size:cover;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
-.etheral-noise{position:fixed;top:0;left:0;right:0;bottom:0;background-image:url('https://framerusercontent.com/images/g0QcWrxr87K0ufOxIUFBakwYA8.png');background-size:240px;background-repeat:repeat;opacity:.5;pointer-events:none;z-index:9}
+.etheral-blob{position:absolute;border-radius:50%;opacity:.08;will-change:transform}
+.etheral-blob-1{width:60vw;height:60vw;background:radial-gradient(circle,#e94560,transparent 70%);top:-15%;right:-10%;animation:eb1 20s ease-in-out infinite}
+.etheral-blob-2{width:50vw;height:50vw;background:radial-gradient(circle,#ffd700,transparent 70%);bottom:-10%;left:-10%;animation:eb2 25s ease-in-out infinite}
+.etheral-blob-3{width:45vw;height:45vw;background:radial-gradient(circle,#3b82f6,transparent 70%);top:30%;left:40%;animation:eb3 22s ease-in-out infinite}
+.etheral-blob-4{width:55vw;height:55vw;background:radial-gradient(circle,#8b5cf6,transparent 70%);top:10%;left:-5%;animation:eb4 18s ease-in-out infinite}
+.etheral-blob-5{width:40vw;height:40vw;background:radial-gradient(circle,#22c55e,transparent 70%);bottom:5%;right:5%;animation:eb5 24s ease-in-out infinite}
+@keyframes eb1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-8vw,5vh) scale(1.2)}66%{transform:translate(5vw,-8vh) scale(.85)}}
+@keyframes eb2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(6vw,-6vh) scale(1.15)}66%{transform:translate(-4vw,7vh) scale(.9)}}
+@keyframes eb3{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-7vw,-5vh) scale(1.25)}66%{transform:translate(8vw,4vh) scale(.8)}}
+@keyframes eb4{0%,100%{transform:translate(0,0) scale(.9)}33%{transform:translate(9vw,6vh) scale(1.1)}66%{transform:translate(-5vw,-7vh) scale(1)}}
+@keyframes eb5{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-6vw,8vh) scale(1.2)}66%{transform:translate(7vw,-5vh) scale(.85)}}
+.etheral-noise{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:9;opacity:.035;background:url('data:image/svg+xml,<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%25" height="100%25" filter="url(%23n)"/></svg>');background-size:180px}
 .ov.h{opacity:0;pointer-events:none;transition:opacity .4s}
 .pn{background:linear-gradient(160deg,#0c1929 0%,#162544 50%,#1a2d52 100%);border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:36px 48px;color:#fff;text-align:center;min-width:0;width:90vw;max-width:620px;box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.05);position:relative;overflow:hidden}
 @media(max-width:600px){.pn{padding:24px 20px;border-radius:18px;width:94vw}.lobby-cards{flex-direction:column}.lobby-card{padding:14px 12px}.lobby-pn{padding:28px 20px 20px!important;min-width:0!important}}
@@ -137,20 +146,12 @@ canvas{display:block}
 </head>
 <body>
 <canvas id="c"></canvas>
-<!-- Etheral Shadow (vanilla port of React component: scale=100, speed=90, noise opacity=1 scale=1.2) -->
-<svg style="position:absolute;width:0;height:0">
-<defs>
-<filter id="etheral-filter">
-  <feTurbulence result="undulation" numOctaves="2" baseFrequency="0.0005,0.002" seed="0" type="turbulence"/>
-  <feColorMatrix id="etheral-hue" in="undulation" type="hueRotate" values="180"/>
-  <feColorMatrix in="dist" result="circulation" type="matrix" values="4 0 0 0 1  4 0 0 0 1  4 0 0 0 1  1 0 0 0 0"/>
-  <feDisplacementMap in="SourceGraphic" in2="circulation" scale="100" result="dist"/>
-  <feDisplacementMap in="dist" in2="undulation" scale="100" result="output"/>
-</filter>
-</defs>
-</svg>
 <div class="etheral-wrap" id="etheral-wrap">
-  <div class="etheral-distort"><div class="etheral-mask"></div></div>
+  <div class="etheral-blob etheral-blob-1"></div>
+  <div class="etheral-blob etheral-blob-2"></div>
+  <div class="etheral-blob etheral-blob-3"></div>
+  <div class="etheral-blob etheral-blob-4"></div>
+  <div class="etheral-blob etheral-blob-5"></div>
 </div>
 <div class="etheral-noise" id="etheral-noise"></div>
 <div id="ib" class="h"></div>
@@ -304,27 +305,6 @@ try {
   firebase.initializeApp(APP_CONFIG.firebase);
   db = firebase.database();
 } catch(e) { console.warn('Firebase init failed:', e.message); }
-
-// =========================================================
-// ETHERAL SHADOW HUE ANIMATION (port of framer-motion animate)
-// speed=90 -> duration=mapRange(90,1,100,1000,50)/25 = ~3.45s per 360deg
-// =========================================================
-(function(){
-  var hueEl=document.getElementById('etheral-filter');
-  if(!hueEl) return;
-  var hueMatrix=document.getElementById('etheral-hue');
-  if(!hueMatrix) return;
-  var start=null;
-  var cycleDuration=3454; // ms per 360deg rotation
-  function tick(ts){
-    if(!start) start=ts;
-    var elapsed=(ts-start)%cycleDuration;
-    var hue=(elapsed/cycleDuration)*360;
-    hueMatrix.setAttribute('values',String(hue));
-    requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-})();
 
 // =========================================================
 // SEEDED RANDOM (deterministik yaris icin)
