@@ -921,6 +921,9 @@ function listenRoom(code){
 }
 
 function updateRoomUI(data,code){
+  // Host degismis mi kontrol et
+  OL.isHost=(data.host===OL.playerName);
+  $('room-title').textContent=OL.isHost?'ODA (Host)':'ODA';
   $('room-code').textContent='Kod: '+code;
   const players=data.players?Object.values(data.players):[];
   $('room-pcount').textContent='('+players.length+'/10)';
@@ -1034,8 +1037,16 @@ function clearChat(){
 G.leaveRoom=()=>{
   if(OL.roomRef){
     db.ref('rooms/'+OL.roomCode+'/players/'+OL.playerName).remove();
-    // Host cikiyorsa odayi sil
-    if(OL.isHost) db.ref('rooms/'+OL.roomCode).remove();
+    if(OL.isHost){
+      // Baska oyuncu var mi? Varsa host'u devret, yoksa odayi sil
+      var players=OL.roomData?.players?Object.keys(OL.roomData.players):[];
+      var others=players.filter(function(n){return n!==OL.playerName;});
+      if(others.length>0){
+        db.ref('rooms/'+OL.roomCode+'/host').set(others[0]);
+      } else {
+        db.ref('rooms/'+OL.roomCode).remove();
+      }
+    }
     OL.listeners.forEach(l=>l.off());OL.listeners=[];
     OL.roomRef=null;OL.roomCode=null;
   }
