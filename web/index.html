@@ -398,41 +398,111 @@ var SPIKER={
   ]
 };
 
-var spikerState={lastPhase:'',lastTime:0,speaking:false,audio:null};
-var SPIKER_FILES={
-  baslangic:['baslangic1','baslangic2','baslangic3'],
-  erken_yaris:['erken1','erken2','erken3'],
-  orta_yaris:['orta1','orta2','orta3'],
-  heyecan_artisi:['heyecan1','heyecan2','heyecan3'],
-  son_duzluk:['son1','son2','son3'],
-  finish:['finish1','finish2','finish3'],
-  yakin_finish:['yakin1','yakin2','yakin3'],
-  sonuc:['sonuc1','sonuc2','sonuc3']
+var spikerState={lastPhase:'',lastTime:0,speaking:false,queue:[],currentAudio:null};
+
+// At ismi -> dosya eslestirmesi
+var NAME_TO_FILE={
+  'Bold Pilot':'name_boldpilot','Karayel':'name_karayel','Ekinoks':'name_ekinoks',
+  'Yavuzhan':'name_yavuzhan','Turbo':'name_turbo','Nadas':'name_nadas',
+  'Hurbatur':'name_hurbatur','Bozdogan':'name_bozdogan','Ayabakan':'name_ayabakan',
+  'Cartegena':'name_cartegena'
+};
+
+// Her faz icin ses parcalari dizisi: string=dosya, {n}=n.siradaki at ismi
+var SPIKER_AUDIO={
+  baslangic:[
+    ['p_bas1a','{1}','p_bas1b','{2}','p_bas1c'],
+    ['p_bas2a','{1}','p_bas2b','{2}','p_bas2c','{3}','p_bas2d'],
+    ['p_bas3a','{1}','p_bas3b','{2}','p_bas3c']
+  ],
+  erken_yaris:[
+    ['p_erk1a','{1}','p_erk1b','{2}','p_erk1c','{3}','p_erk1d'],
+    ['p_erk2a','{1}','p_erk2b','{2}','p_erk2c','{3}','p_erk2d']
+  ],
+  orta_yaris:[
+    ['p_ort1a','{1}','p_ort1b','{2}','p_ort1c','{3}','p_ort1d'],
+    ['p_ort2a','{1}','p_ort2b','{2}','p_ort2c','{3}','p_ort2d']
+  ],
+  heyecan_artisi:[
+    ['p_hey1a','{2}','p_hey1b','{1}','p_hey1c'],
+    ['p_hey2a','{3}','p_hey2b'],
+    ['p_hey3a','{1}','p_hey3b','{2}','p_hey3c','{3}','p_hey3d']
+  ],
+  son_duzluk:[
+    ['p_son1a','{1}','p_son1b','{2}','p_son1c'],
+    ['p_son2a','{2}','p_son2b','{1}','p_son2c']
+  ],
+  finish:[
+    ['p_fin1a','{1}','p_fin1b','{2}','p_fin1c','{3}','p_fin1d'],
+    ['p_fin2a','{2}','p_fin2b','{1}','p_fin2c']
+  ],
+  yakin_finish:[
+    ['p_yak1'],
+    ['p_yak2a','{1}','p_yak2b','{2}','p_yak2c']
+  ],
+  sonuc:[
+    ['p_son_r1a','{1}','p_son_r1b'],
+    ['p_son_r2a','{1}','p_son_r2b'],
+    ['p_son_r3a','{1}','p_son_r3b','{2}','p_son_r3c','{3}','p_son_r3d']
+  ]
 };
 
 function spikerInit(){
-  spikerState={lastPhase:'',lastTime:0,speaking:false,audio:null};
+  spikerState={lastPhase:'',lastTime:0,speaking:false,queue:[],currentAudio:null};
 }
 
-function spikerSpeak(text,audioFile){
+function spikerPlayQueue(textToShow){
+  if(spikerState.queue.length===0){
+    spikerState.speaking=false;
+    var el=document.getElementById('spiker-text');
+    if(el) el.classList.remove('show');
+    return;
+  }
+  var file=spikerState.queue.shift();
+  var a=new Audio('audio/'+file+'.mp3');
+  spikerState.currentAudio=a;
+  a.volume=0.85;
+  a.onended=function(){spikerPlayQueue();};
+  a.onerror=function(){spikerPlayQueue();};
+  a.play().catch(function(){spikerPlayQueue();});
+}
+
+function spikerSpeak(phase,names,textToShow){
   if(spikerState.speaking) return;
   spikerState.speaking=true;
   // Text goster
   var el=document.getElementById('spiker-text');
-  if(el){el.textContent=text;el.classList.add('show');}
-  // Ses cal
-  if(audioFile){
-    var a=new Audio('audio/'+audioFile+'.mp3');
-    spikerState.audio=a;
-    a.volume=0.85;
-    a.play().catch(function(){});
-    a.onended=function(){spikerState.speaking=false;if(el)el.classList.remove('show');};
-    a.onerror=function(){spikerState.speaking=false;if(el)el.classList.remove('show');};
-    // Fallback: 6sn sonra zorla bitir
-    setTimeout(function(){if(spikerState.speaking){spikerState.speaking=false;if(el)el.classList.remove('show');}},6000);
-  } else {
+  if(el){el.textContent=textToShow;el.classList.add('show');}
+  // Ses parcalarini hazirla
+  var sequences=SPIKER_AUDIO[phase];
+  if(!sequences||sequences.length===0){
     setTimeout(function(){spikerState.speaking=false;if(el)el.classList.remove('show');},4000);
+    return;
   }
+  var seq=sequences[Math.floor(Math.random()*sequences.length)];
+  var queue=[];
+  for(var i=0;i<seq.length;i++){
+    var part=seq[i];
+    if(part.charAt(0)==='{'){
+      // At ismi
+      var idx=parseInt(part.charAt(1))-1;
+      var name=names[idx]||'';
+      var nameFile=NAME_TO_FILE[name];
+      if(nameFile) queue.push(nameFile);
+    } else {
+      queue.push(part);
+    }
+  }
+  spikerState.queue=queue;
+  // Fallback timeout
+  setTimeout(function(){
+    if(spikerState.speaking){
+      spikerState.speaking=false;spikerState.queue=[];
+      if(spikerState.currentAudio){try{spikerState.currentAudio.pause();}catch(e){}}
+      if(el)el.classList.remove('show');
+    }
+  },12000);
+  spikerPlayQueue();
 }
 
 function spikerGetTop4(){
@@ -472,9 +542,7 @@ function spikerUpdate(prog){
     var names=spikerGetTop4();
     var tmpl=spikerPick(SPIKER[phase]);
     var text=spikerFillTemplate(tmpl,names);
-    var files=SPIKER_FILES[phase];
-    var audioFile=files?files[Math.floor(Math.random()*files.length)]:null;
-    spikerSpeak(text,audioFile);
+    spikerSpeak(phase,names,text);
     spikerState.lastPhase=phase;
     spikerState.lastTime=now;
   }
@@ -485,11 +553,9 @@ function spikerFinish(){
   var yakin=finishOrder.length>=2&&Math.abs(finishOrder[0].finishTime-finishOrder[1].finishTime)<1;
   spikerState.speaking=false;
   if(yakin){
-    var files=SPIKER_FILES.yakin_finish;
-    spikerSpeak(spikerFillTemplate(spikerPick(SPIKER.yakin_finish),top),files[Math.floor(Math.random()*files.length)]);
+    spikerSpeak('yakin_finish',top,spikerFillTemplate(spikerPick(SPIKER.yakin_finish),top));
   } else {
-    var files=SPIKER_FILES.sonuc;
-    spikerSpeak(spikerFillTemplate(spikerPick(SPIKER.sonuc),top),files[Math.floor(Math.random()*files.length)]);
+    spikerSpeak('sonuc',top,spikerFillTemplate(spikerPick(SPIKER.sonuc),top));
   }
 }
 
@@ -1510,9 +1576,9 @@ function stopAllAudio(){
   stopCrowdCheer();
   if(crowdNode){try{crowdNode.stop();}catch(e){}crowdNode=null;}
   if(crowdGain){crowdGain=null;}
-  // Spiker ses + text durdur
-  if(spikerState.audio){try{spikerState.audio.pause();spikerState.audio.currentTime=0;}catch(e){}}
-  spikerState.speaking=false;
+  // Spiker durdur
+  if(spikerState.currentAudio){try{spikerState.currentAudio.pause();}catch(e){}}
+  spikerState.speaking=false;spikerState.queue=[];spikerState.currentAudio=null;
   var el=document.getElementById('spiker-text');
   if(el){el.classList.remove('show');el.textContent='';}
 }
