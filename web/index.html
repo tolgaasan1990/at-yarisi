@@ -349,6 +349,64 @@ try {
 }catch(e){console.warn('Shader bg error:',e);}})();
 
 // =========================================================
+// CROWD AUDIO (Web Audio API - procedural)
+// =========================================================
+var crowdCtx=null,crowdNode=null,crowdGain=null,crowdPlaying=false;
+function initCrowdAudio(){
+  try{
+    if(!crowdCtx) crowdCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(crowdCtx.state==='suspended') crowdCtx.resume();
+  }catch(e){}
+}
+function startCrowdCheer(intensity){
+  if(!crowdCtx) return;
+  try{
+    if(!crowdNode){
+      // White noise -> bandpass = crowd murmur
+      var bufSize=crowdCtx.sampleRate*2;
+      var buf=crowdCtx.createBuffer(1,bufSize,crowdCtx.sampleRate);
+      var data=buf.getChannelData(0);
+      for(var i=0;i<bufSize;i++) data[i]=(Math.random()*2-1);
+      crowdNode=crowdCtx.createBufferSource();
+      crowdNode.buffer=buf;
+      crowdNode.loop=true;
+      // Bandpass filter - insan sesi frekanslari
+      var filter=crowdCtx.createBiquadFilter();
+      filter.type='bandpass';
+      filter.frequency.value=1200;
+      filter.Q.value=0.5;
+      // LFO - dalga dalga tezahurat
+      var lfo=crowdCtx.createOscillator();
+      var lfoGain=crowdCtx.createGain();
+      lfo.frequency.value=2.5;
+      lfoGain.gain.value=0.15;
+      lfo.connect(lfoGain);
+      crowdGain=crowdCtx.createGain();
+      crowdGain.gain.value=0;
+      lfoGain.connect(crowdGain.gain);
+      crowdNode.connect(filter);
+      filter.connect(crowdGain);
+      crowdGain.connect(crowdCtx.destination);
+      crowdNode.start();
+      lfo.start();
+    }
+    // Intensity 0-1 arasi ses seviyesi
+    crowdGain.gain.cancelScheduledValues(crowdCtx.currentTime);
+    crowdGain.gain.setTargetAtTime(intensity*0.25,crowdCtx.currentTime,0.3);
+    crowdPlaying=true;
+  }catch(e){}
+}
+function stopCrowdCheer(){
+  if(crowdGain&&crowdPlaying){
+    try{
+      crowdGain.gain.cancelScheduledValues(crowdCtx.currentTime);
+      crowdGain.gain.setTargetAtTime(0,crowdCtx.currentTime,0.5);
+      crowdPlaying=false;
+    }catch(e){}
+  }
+}
+
+// =========================================================
 // SEEDED RANDOM (deterministik yaris icin)
 // =========================================================
 let _seed = 12345;
@@ -841,7 +899,7 @@ setInterval(()=>{
 function update(dt){
   if(raceState==='countdown'){countdownTime-=dt;const el=$('cd');
     if(countdownTime>0)el.textContent=Math.ceil(countdownTime);
-    else{el.textContent='BASLA!';if(countdownTime<-.5){hide('cd');raceState='racing';raceTime=0;}}}
+    else{el.textContent='BASLA!';if(countdownTime<-.5){hide('cd');raceState='racing';raceTime=0;initCrowdAudio();}}}
   if(raceState==='racing'){
     raceTime+=dt;$('timer').textContent=fmt(raceTime);
     const dist=finishX-90,rate=dist/CFG.duration,avg=3.1;
@@ -917,6 +975,13 @@ function update(dt){
     let maxX=0;horses.forEach(h=>{if(h.x>maxX)maxX=h.x;});
     const targetCam=Math.max(0,maxX-W*0.3);
     camX+=(targetCam-camX)*0.08; // smooth follow
+
+    // Crowd ses: %50'den sonra hafif, %70'den sonra guclu
+    var prog=(maxX-90)/(finishX-90);
+    if(prog>0.5){
+      var intensity=Math.min(1,(prog-0.5)/0.5);
+      startCrowdCheer(intensity);
+    }
   }
   if(CFG.weather==='rainy')rain.forEach(r=>{r.x-=r.s*.3*60*dt;r.y+=r.s*60*dt;if(r.y>H){r.y=-20;r.x=Math.random()*W;}if(r.x<0)r.x=W;});
 }
@@ -957,19 +1022,37 @@ function drawBg(){
       // Kat ayirici cizgi
       cx.fillStyle=night?'#1e2228':'#a09888';
       cx.fillRect(gx-gw/2,ky,gw,1.5);
-      // Seyirciler (her katta)
+      // Seyirciler (her katta) - son %30'da heyecanlanir
       var cols=Math.floor(gw/7);
+      var excitement=0;
+      if(raceState==='racing'){
+        var maxX=0;horses.forEach(function(h){if(h.x>maxX)maxX=h.x;});
+        var prog=(maxX-90)/(finishX-90);
+        if(prog>0.7) excitement=Math.min(1,(prog-0.7)/0.3);
+      }
       for(var c=0;c<cols;c++){
         var sx=gx-gw/2+4+c*7;
         var sy=ky+kh*0.3+k*2;
+        // Heyecan: ziplama + el sallama
+        var bounce=0,armUp=false;
+        if(excitement>0){
+          var seed=(k*cols+c)*7.13+raceTime*8;
+          bounce=Math.sin(seed)*excitement*4;
+          armUp=Math.sin(seed*1.3)>0;
+        }
         // Kafa
         var hc=['#f4d0a8','#d4a87c','#8b6c50','#f0c090','#c49060','#e8b888'][(k*cols+c)%6];
         cx.fillStyle=hc;
-        cx.beginPath();cx.arc(sx,sy,2.2,0,Math.PI*2);cx.fill();
+        cx.beginPath();cx.arc(sx,sy-bounce,2.2,0,Math.PI*2);cx.fill();
         // Govde (renkli tshirt)
         var tc=['#e63946','#3b82f6','#22c55e','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#fff'][(k*cols+c)%8];
         cx.fillStyle=tc;
-        cx.fillRect(sx-2,sy+2,4,4);
+        cx.fillRect(sx-2,sy+2-bounce,4,4);
+        // El sallama (heyecanli)
+        if(armUp&&excitement>0.3){
+          cx.fillStyle=hc;
+          cx.beginPath();cx.arc(sx+(c%2?3:-3),sy-2-bounce,1.5,0,Math.PI*2);cx.fill();
+        }
       }
     }
     // Cati
@@ -1282,7 +1365,7 @@ function tBot(){
 // RESULTS
 // =========================================================
 function showResults(){
-  raceState='idle';hide('hud');hide('ib');clearCanvas();show('ov-res');showEtheral();
+  raceState='idle';hide('hud');hide('ib');clearCanvas();show('ov-res');showEtheral();stopCrowdCheer();
 
   // Online modda finished state yaz
   if(OL.mode==='online'&&OL.isHost&&OL.roomRef){
