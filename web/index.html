@@ -451,58 +451,15 @@ function spikerInit(){
   spikerState={lastPhase:'',lastTime:0,speaking:false,queue:[],currentAudio:null};
 }
 
-function spikerPlayQueue(textToShow){
-  if(spikerState.queue.length===0){
-    spikerState.speaking=false;
-    var el=document.getElementById('spiker-text');
-    if(el) el.classList.remove('show');
-    return;
-  }
-  var file=spikerState.queue.shift();
-  var a=new Audio('audio/'+file+'.mp3');
-  spikerState.currentAudio=a;
-  a.volume=0.85;
-  a.onended=function(){spikerPlayQueue();};
-  a.onerror=function(){spikerPlayQueue();};
-  a.play().catch(function(){spikerPlayQueue();});
-}
-
 function spikerSpeak(phase,names,textToShow){
   if(spikerState.speaking) return;
   spikerState.speaking=true;
-  // Text goster
   var el=document.getElementById('spiker-text');
   if(el){el.textContent=textToShow;el.classList.add('show');}
-  // Ses parcalarini hazirla
-  var sequences=SPIKER_AUDIO[phase];
-  if(!sequences||sequences.length===0){
-    setTimeout(function(){spikerState.speaking=false;if(el)el.classList.remove('show');},4000);
-    return;
-  }
-  var seq=sequences[Math.floor(Math.random()*sequences.length)];
-  var queue=[];
-  for(var i=0;i<seq.length;i++){
-    var part=seq[i];
-    if(part.charAt(0)==='{'){
-      // At ismi
-      var idx=parseInt(part.charAt(1))-1;
-      var name=names[idx]||'';
-      var nameFile=NAME_TO_FILE[name];
-      if(nameFile) queue.push(nameFile);
-    } else {
-      queue.push(part);
-    }
-  }
-  spikerState.queue=queue;
-  // Fallback timeout
   setTimeout(function(){
-    if(spikerState.speaking){
-      spikerState.speaking=false;spikerState.queue=[];
-      if(spikerState.currentAudio){try{spikerState.currentAudio.pause();}catch(e){}}
-      if(el)el.classList.remove('show');
-    }
-  },12000);
-  spikerPlayQueue();
+    spikerState.speaking=false;
+    if(el) el.classList.remove('show');
+  },4500);
 }
 
 function spikerGetTop4(){
@@ -526,8 +483,9 @@ function spikerPick(arr){return arr[Math.floor(Math.random()*arr.length)];}
 function spikerUpdate(prog){
   var now=performance.now()/1000;
   if(spikerState.speaking) return;
-  // Minimum 4sn arayla konus
-  if(now-spikerState.lastTime<4) return;
+  // Minimum aralik: kisa yarislarda 3sn, uzun yarislarda 5sn
+  var minGap=CFG.duration<30?3:CFG.duration<60?4:5;
+  if(now-spikerState.lastTime<minGap) return;
 
   var phase='';
   if(prog<0.05) phase='baslangic';
@@ -1573,12 +1531,7 @@ function tBot(){
 // RESULTS
 // =========================================================
 function stopAllAudio(){
-  stopCrowdCheer();
-  if(crowdNode){try{crowdNode.stop();}catch(e){}crowdNode=null;}
-  if(crowdGain){crowdGain=null;}
-  // Spiker durdur
-  if(spikerState.currentAudio){try{spikerState.currentAudio.pause();}catch(e){}}
-  spikerState.speaking=false;spikerState.queue=[];spikerState.currentAudio=null;
+  spikerState.speaking=false;
   var el=document.getElementById('spiker-text');
   if(el){el.classList.remove('show');el.textContent='';}
 }
