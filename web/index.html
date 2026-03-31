@@ -168,7 +168,7 @@ canvas{display:block}
   <div class="menu-footer">v1.0</div>
 </div></div>
 
-<div id="spiker-text"></div>
+<!-- <div id="spiker-text"></div> ses ayarlaninca aktif edilecek -->
 
 <!-- LOBBY -->
 <div id="ov-lobby" class="ov h">
@@ -1068,7 +1068,7 @@ setInterval(()=>{
 function update(dt){
   if(raceState==='countdown'){countdownTime-=dt;const el=$('cd');
     if(countdownTime>0)el.textContent=Math.ceil(countdownTime);
-    else{el.textContent='BASLA!';if(countdownTime<-.5){hide('cd');raceState='racing';raceTime=0;spikerInit();}}}
+    else{el.textContent='BASLA!';if(countdownTime<-.5){hide('cd');raceState='racing';raceTime=0;}}}
   if(raceState==='racing'){
     raceTime+=dt;$('timer').textContent=fmt(raceTime);
     const dist=finishX-90,rate=dist/CFG.duration,avg=3.1;
@@ -1138,7 +1138,7 @@ function update(dt){
       h.frame=Math.floor(h.animTime)%GALLOP_FRAMES;
       if(h.x>=finishX){h.finished=true;h.finishTime=raceTime;finishOrder.push(h);h.finishPos=finishOrder.length;}
     });
-    if(finishOrder.length>=horses.length){raceState='finished';spikerFinish();setTimeout(showResults,3500);}
+    if(finishOrder.length>=horses.length){raceState='finished';setTimeout(showResults,700);}
 
     // Kamera: lider ati takip et, ekranin %30'unda tut
     let maxX=0;horses.forEach(h=>{if(h.x>maxX)maxX=h.x;});
@@ -1147,7 +1147,7 @@ function update(dt){
 
     // Spiker text
     var prog=(maxX-90)/(finishX-90);
-    spikerUpdate(prog);
+    // spikerUpdate(prog); // ses ayarlaninca aktif edilecek
   }
   if(CFG.weather==='rainy')rain.forEach(r=>{r.x-=r.s*.3*60*dt;r.y+=r.s*60*dt;if(r.y>H){r.y=-20;r.x=Math.random()*W;}if(r.x<0)r.x=W;});
 }
