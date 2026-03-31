@@ -398,32 +398,41 @@ var SPIKER={
   ]
 };
 
-var spikerState={lastPhase:'',lastTime:0,speaking:false,voice:null};
+var spikerState={lastPhase:'',lastTime:0,speaking:false,audio:null};
+var SPIKER_FILES={
+  baslangic:['baslangic1','baslangic2','baslangic3'],
+  erken_yaris:['erken1','erken2','erken3'],
+  orta_yaris:['orta1','orta2','orta3'],
+  heyecan_artisi:['heyecan1','heyecan2','heyecan3'],
+  son_duzluk:['son1','son2','son3'],
+  finish:['finish1','finish2','finish3'],
+  yakin_finish:['yakin1','yakin2','yakin3'],
+  sonuc:['sonuc1','sonuc2','sonuc3']
+};
 
 function spikerInit(){
-  spikerState={lastPhase:'',lastTime:0,speaking:false,voice:null};
-  if(!window.speechSynthesis) return;
-  speechSynthesis.cancel();
-  // Turkce ses bul
-  function findVoice(){
-    var voices=speechSynthesis.getVoices();
-    for(var i=0;i<voices.length;i++){
-      if(voices[i].lang&&voices[i].lang.indexOf('tr')===0){spikerState.voice=voices[i];return;}
-    }
-  }
-  findVoice();
-  if(!spikerState.voice) speechSynthesis.onvoiceschanged=findVoice;
+  spikerState={lastPhase:'',lastTime:0,speaking:false,audio:null};
 }
 
-function spikerSpeak(text){
+function spikerSpeak(text,audioFile){
   if(spikerState.speaking) return;
   spikerState.speaking=true;
+  // Text goster
   var el=document.getElementById('spiker-text');
   if(el){el.textContent=text;el.classList.add('show');}
-  setTimeout(function(){
-    spikerState.speaking=false;
-    if(el) el.classList.remove('show');
-  },4000);
+  // Ses cal
+  if(audioFile){
+    var a=new Audio('audio/'+audioFile+'.mp3');
+    spikerState.audio=a;
+    a.volume=0.85;
+    a.play().catch(function(){});
+    a.onended=function(){spikerState.speaking=false;if(el)el.classList.remove('show');};
+    a.onerror=function(){spikerState.speaking=false;if(el)el.classList.remove('show');};
+    // Fallback: 6sn sonra zorla bitir
+    setTimeout(function(){if(spikerState.speaking){spikerState.speaking=false;if(el)el.classList.remove('show');}},6000);
+  } else {
+    setTimeout(function(){spikerState.speaking=false;if(el)el.classList.remove('show');},4000);
+  }
 }
 
 function spikerGetTop4(){
@@ -463,7 +472,9 @@ function spikerUpdate(prog){
     var names=spikerGetTop4();
     var tmpl=spikerPick(SPIKER[phase]);
     var text=spikerFillTemplate(tmpl,names);
-    spikerSpeak(text);
+    var files=SPIKER_FILES[phase];
+    var audioFile=files?files[Math.floor(Math.random()*files.length)]:null;
+    spikerSpeak(text,audioFile);
     spikerState.lastPhase=phase;
     spikerState.lastTime=now;
   }
@@ -474,9 +485,11 @@ function spikerFinish(){
   var yakin=finishOrder.length>=2&&Math.abs(finishOrder[0].finishTime-finishOrder[1].finishTime)<1;
   spikerState.speaking=false;
   if(yakin){
-    spikerSpeak(spikerFillTemplate(spikerPick(SPIKER.yakin_finish),top));
+    var files=SPIKER_FILES.yakin_finish;
+    spikerSpeak(spikerFillTemplate(spikerPick(SPIKER.yakin_finish),top),files[Math.floor(Math.random()*files.length)]);
   } else {
-    spikerSpeak(spikerFillTemplate(spikerPick(SPIKER.sonuc),top));
+    var files=SPIKER_FILES.sonuc;
+    spikerSpeak(spikerFillTemplate(spikerPick(SPIKER.sonuc),top),files[Math.floor(Math.random()*files.length)]);
   }
 }
 
@@ -1497,7 +1510,8 @@ function stopAllAudio(){
   stopCrowdCheer();
   if(crowdNode){try{crowdNode.stop();}catch(e){}crowdNode=null;}
   if(crowdGain){crowdGain=null;}
-  // Spiker text gizle
+  // Spiker ses + text durdur
+  if(spikerState.audio){try{spikerState.audio.pause();spikerState.audio.currentTime=0;}catch(e){}}
   spikerState.speaking=false;
   var el=document.getElementById('spiker-text');
   if(el){el.classList.remove('show');el.textContent='';}
