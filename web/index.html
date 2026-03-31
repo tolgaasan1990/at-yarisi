@@ -880,7 +880,7 @@ function listenRoom(code){
     const data=snap.val();
     if(!data){G.showLobby();return;}
     // Odadan atildim mi kontrol et
-    if(data.players&&!data.players[OL.playerName]&&data.state==='waiting'){
+    if(data.players&&!data.players[OL.playerName]){
       OL.listeners.forEach(l=>l.off());OL.listeners=[];
       OL.roomRef=null;OL.roomCode=null;
       G.showLobby();
