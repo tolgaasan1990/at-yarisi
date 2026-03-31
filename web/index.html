@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>At Yarisi - Horse Racing</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;user-select:none}
+canvas{display:block}
+.ov{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:10;overflow-y:auto;padding:20px 0}
+.etheral-wrap{position:fixed;inset:0;pointer-events:none;z-index:9;overflow:hidden}
+.etheral-shadow-layer{position:absolute;inset:0;filter:url(#etheral-filter) blur(3px);opacity:.18}
+.etheral-shadow-color{width:100%;height:100%;background:rgba(80,60,40,1);mask-image:url('https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png');-webkit-mask-image:url('https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png');mask-size:cover;-webkit-mask-size:cover;mask-repeat:no-repeat;-webkit-mask-repeat:no-repeat;mask-position:center;-webkit-mask-position:center}
+.etheral-orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.12}
+.etheral-orb-1{width:500px;height:500px;background:#e94560;top:-10%;right:-5%;animation:orb1 12s ease-in-out infinite alternate}
+.etheral-orb-2{width:450px;height:450px;background:#ffd700;bottom:-8%;left:-5%;animation:orb2 15s ease-in-out infinite alternate}
+.etheral-orb-3{width:400px;height:400px;background:#3b82f6;top:40%;left:45%;animation:orb3 18s ease-in-out infinite alternate}
+.etheral-orb-4{width:350px;height:350px;background:#8b5cf6;top:10%;left:20%;animation:orb4 14s ease-in-out infinite alternate}
+.etheral-orb-5{width:300px;height:300px;background:#22c55e;bottom:15%;right:15%;animation:orb5 16s ease-in-out infinite alternate}
+@keyframes orb1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-60px,40px) scale(1.15)}100%{transform:translate(30px,-20px) scale(.9)}}
+@keyframes orb2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(50px,-30px) scale(1.1)}100%{transform:translate(-40px,50px) scale(.95)}}
+@keyframes orb3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-40px,-50px) scale(1.2)}100%{transform:translate(60px,30px) scale(.85)}}
+@keyframes orb4{0%{transform:translate(0,0) scale(.9)}50%{transform:translate(70px,40px) scale(1.1)}100%{transform:translate(-30px,-60px) scale(1)}}
+@keyframes orb5{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-50px,60px) scale(1.15)}100%{transform:translate(40px,-40px) scale(.9)}}
+.etheral-noise{position:fixed;inset:0;background-image:url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E');background-size:150px;opacity:.04;pointer-events:none;z-index:9}
+.ov.h{opacity:0;pointer-events:none;transition:opacity .4s}
+.pn{background:linear-gradient(160deg,#0c1929 0%,#162544 50%,#1a2d52 100%);border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:36px 48px;color:#fff;text-align:center;min-width:0;width:90vw;max-width:620px;box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.05);position:relative;overflow:hidden}
+@media(max-width:600px){.pn{padding:24px 20px;border-radius:18px;width:94vw}.lobby-cards{flex-direction:column}.lobby-card{padding:14px 12px}.lobby-pn{padding:28px 20px 20px!important;min-width:0!important}}
+.pn::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 20%,rgba(233,69,96,.06) 0%,transparent 50%),radial-gradient(circle at 70% 80%,rgba(255,215,0,.04) 0%,transparent 50%);pointer-events:none}
+.pn h1{font-size:42px;background:linear-gradient(135deg,#ffd700 0%,#ffaa00 40%,#ff8c00 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;letter-spacing:2px;filter:drop-shadow(0 2px 4px rgba(255,170,0,.3));position:relative}
+.pn h2{color:#7a8da0;font-size:14px;font-weight:400;margin-bottom:22px;letter-spacing:3px;text-transform:uppercase;position:relative}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin:3px 0;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.03);transition:.2s}
+.sr:hover{background:rgba(255,255,255,.04)}
+.sr label{color:#8899aa;font-size:14px;font-weight:500;letter-spacing:.5px}
+.sr .ops{display:flex;gap:6px}
+.sr .ops button{padding:6px 16px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.04);color:#6a7a8a;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s;backdrop-filter:blur(4px)}
+.sr .ops button.on{background:linear-gradient(135deg,#e94560,#d63051);color:#fff;border-color:rgba(233,69,96,.3);box-shadow:0 4px 15px rgba(233,69,96,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+.sr .ops button.on.green{background:linear-gradient(135deg,#22c55e,#16a34a);border-color:rgba(34,197,94,.3);box-shadow:0 4px 15px rgba(34,197,94,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+.sr .ops button.on.amber{background:linear-gradient(135deg,#f59e0b,#d97706);border-color:rgba(245,158,11,.3);box-shadow:0 4px 15px rgba(245,158,11,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+.sr .ops button.on.blue{background:linear-gradient(135deg,#3b82f6,#2563eb);border-color:rgba(59,130,246,.3);box-shadow:0 4px 15px rgba(59,130,246,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+.sr .ops button.on.purple{background:linear-gradient(135deg,#8b5cf6,#7c3aed);border-color:rgba(139,92,246,.3);box-shadow:0 4px 15px rgba(139,92,246,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+.sr .ops button:hover:not(.on){border-color:rgba(233,69,96,.4);color:#bbb;background:rgba(233,69,96,.08)}
+.hl{margin:10px 0;max-height:230px;overflow-y:auto}
+.hi{display:flex;align-items:center;padding:6px 10px;margin:2px 0;border-radius:7px;cursor:pointer;border:2px solid transparent;transition:.15s}
+.hi:hover{background:rgba(255,255,255,.06)}.hi.sel{border-color:#ffd700;background:rgba(255,215,0,.1)}
+.hc{width:14px;height:14px;border-radius:50%;margin-right:8px;border:2px solid rgba(255,255,255,.2);flex-shrink:0}
+.hn{flex:1;text-align:left;font-size:13px}.ho{color:#ffd700;font-size:12px}
+.br{display:flex;gap:5px;justify-content:center;margin:8px 0}
+.bb{padding:6px 14px;border-radius:7px;border:2px solid #2ecc71;background:rgba(46,204,113,.1);color:#2ecc71;cursor:pointer;font-size:13px;font-weight:700;transition:.15s}
+.bb.on{background:#2ecc71;color:#fff}.bb:hover{background:rgba(46,204,113,.25)}
+.ab{padding:14px 40px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;margin:6px;transition:all .25s;text-transform:uppercase;letter-spacing:1.5px;position:relative;overflow:hidden}
+.ab::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);transition:left .5s}
+.ab:hover::after{left:100%}
+.ab:active{transform:scale(.96)}
+.bs{background:linear-gradient(135deg,#e94560 0%,#d63051 50%,#c0392b 100%);color:#fff;box-shadow:0 4px 15px rgba(233,69,96,.3),inset 0 1px 0 rgba(255,255,255,.15)}
+.bs:hover{box-shadow:0 6px 25px rgba(233,69,96,.45);transform:translateY(-2px)}.bs:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
+.bp{background:linear-gradient(135deg,#3498db 0%,#2980b9 100%);color:#fff;box-shadow:0 4px 15px rgba(52,152,219,.3),inset 0 1px 0 rgba(255,255,255,.15)}
+.bp:hover{box-shadow:0 6px 25px rgba(52,152,219,.45);transform:translateY(-2px)}
+.bm{background:rgba(255,255,255,.06);color:#8899aa;font-size:12px;padding:9px 22px;border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(4px)}
+.bm:hover{background:rgba(255,255,255,.1);color:#bbb}
+.md{background:linear-gradient(135deg,#27ae60,#2ecc71);padding:5px 20px;border-radius:14px;display:inline-block;font-size:17px;font-weight:700;color:#fff;margin:6px 0}
+.rt{width:100%;border-collapse:collapse;margin:10px 0}
+.rt th{padding:5px 6px;color:#556;font-size:11px;text-align:left;border-bottom:1px solid #223}
+.rt td{padding:7px 6px;font-size:13px;text-align:left}
+.rt tr.g1{background:rgba(255,215,0,.12)}.rt tr.g1 td:first-child{color:#ffd700;font-weight:700;font-size:16px}
+.rt tr.g2{background:rgba(192,192,192,.08)}.rt tr.g2 td:first-child{color:#c0c0c0;font-weight:700}
+.rt tr.g3{background:rgba(205,127,50,.08)}.rt tr.g3 td:first-child{color:#cd7f32;font-weight:700}
+#hud{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:5}
+#timer{font:700 44px 'Courier New',monospace;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)}
+#cd{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font:700 150px 'Courier New',monospace;color:#ffd700;text-shadow:0 0 40px rgba(255,215,0,.5);z-index:15;transition:transform .2s}
+.h{display:none!important}
+#ib{position:fixed;top:10px;right:14px;color:rgba(255,255,255,.5);font-size:11px;z-index:5;text-align:right;line-height:1.4}
+#si{color:#8899aa;font-size:12px;margin:5px 0}
+.inp{width:180px;padding:7px 12px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.06);color:#fff;font-size:14px;outline:none;transition:.2s}
+.inp:focus{border-color:#e94560;background:rgba(255,255,255,.1)}
+.rp{display:flex;align-items:center;padding:6px 10px;margin:3px 0;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04)}
+.rp .rp-name{flex:1;text-align:left;font-size:14px;color:#ccc}
+.rp .rp-status{font-size:12px;padding:3px 10px;border-radius:6px}
+.rp .rp-ready{background:rgba(34,197,94,.2);color:#22c55e}
+.rp .rp-wait{background:rgba(234,179,8,.15);color:#eab308}
+.rp .rp-host{color:#ffd700;font-size:11px;margin-left:6px}
+
+/* Premium Menu */
+.menu-pn{padding:40px 50px 30px!important}
+.menu-trophy{font-size:52px;margin-bottom:-4px;filter:drop-shadow(0 4px 12px rgba(255,215,0,.3));animation:trophy-bob 3s ease-in-out infinite}
+@keyframes trophy-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.menu-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);margin:16px 0}
+.menu-settings{display:flex;flex-direction:column;gap:4px}
+.sr-icon{margin-right:6px;font-size:15px}
+.menu-go{margin-top:10px;padding:16px 50px!important;font-size:19px!important;letter-spacing:2px!important}
+.menu-footer{color:rgba(255,255,255,.2);font-size:11px;margin-top:14px;letter-spacing:1px}
+
+/* Glow on panel */
+.menu-pn::after{content:'';position:absolute;bottom:-2px;left:15%;right:15%;height:3px;background:linear-gradient(90deg,transparent,rgba(233,69,96,.5),rgba(255,215,0,.5),rgba(52,152,219,.5),transparent);border-radius:50%;filter:blur(4px)}
+
+/* ===== LOBBY ===== */
+.lobby-pn{padding:36px 44px 24px!important;min-width:0!important;max-width:620px!important}
+.lobby-icon{font-size:44px;margin-bottom:4px;filter:drop-shadow(0 4px 12px rgba(255,215,0,.3));animation:trophy-bob 3s ease-in-out infinite}
+.lobby-name{font-size:28px;font-weight:800;color:#fff;letter-spacing:3px;margin-bottom:2px}
+.lobby-welcome{color:#7a8da0;font-size:13px;letter-spacing:2px;text-transform:uppercase;margin-bottom:0}
+
+.lobby-section{margin:4px 0}
+.lobby-section-label{color:#445;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+
+.lobby-cards{display:flex;gap:12px}
+.lobby-card{flex:1;padding:18px 16px 14px;border-radius:16px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);cursor:pointer;transition:all .3s;position:relative;overflow:hidden;text-align:center}
+.lobby-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.12)}
+.lobby-card:active{transform:translateY(0) scale(.98)}
+
+.lobby-card-create{background:linear-gradient(160deg,rgba(34,197,94,.06),rgba(34,197,94,.02))!important;border-color:rgba(34,197,94,.12)!important}
+.lobby-card-create:hover{background:linear-gradient(160deg,rgba(34,197,94,.12),rgba(34,197,94,.04))!important;border-color:rgba(34,197,94,.25)!important;box-shadow:0 8px 30px rgba(34,197,94,.15)}
+
+.lobby-card-join{background:linear-gradient(160deg,rgba(59,130,246,.06),rgba(59,130,246,.02))!important;border-color:rgba(59,130,246,.12)!important;cursor:default!important}
+.lobby-card-join:hover{transform:none!important;background:linear-gradient(160deg,rgba(59,130,246,.08),rgba(59,130,246,.03))!important;border-color:rgba(59,130,246,.18)!important}
+
+.lobby-card-solo{background:linear-gradient(160deg,rgba(233,69,96,.04),rgba(233,69,96,.01))!important;border-color:rgba(233,69,96,.1)!important;padding:14px 20px!important}
+.lobby-card-solo:hover{background:linear-gradient(160deg,rgba(233,69,96,.1),rgba(233,69,96,.03))!important;border-color:rgba(233,69,96,.2)!important;box-shadow:0 8px 30px rgba(233,69,96,.1)}
+
+.lobby-card-icon{font-size:30px;margin-bottom:6px}
+.lobby-card-title{font-size:13px;font-weight:800;color:#fff;letter-spacing:1.5px;text-transform:uppercase}
+.lobby-card-desc{font-size:11px;color:#5a6a7a;margin-top:3px}
+
+.lobby-code-input{width:90px;padding:7px 8px;border:1px solid rgba(59,130,246,.2);border-radius:8px;background:rgba(0,0,0,.3);color:#fff;font-size:13px;font-weight:700;letter-spacing:3px;text-align:center;text-transform:uppercase;outline:none;transition:.2s}
+.lobby-code-input:focus{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.08)}
+.lobby-code-input::placeholder{color:#334;font-weight:400;letter-spacing:1px;font-size:10px}
+
+.lobby-join-btn{width:36px;height:34px;border:none;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:14px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.lobby-join-btn:hover{box-shadow:0 4px 15px rgba(59,130,246,.35);transform:translateY(-1px)}
+
+.lobby-logout{padding:7px 20px;border:1px solid rgba(255,255,255,.06);border-radius:8px;background:transparent;color:#556;font-size:11px;cursor:pointer;transition:.2s}
+.lobby-logout:hover{color:#889;border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.03)}
+.lobby-footer{color:rgba(255,255,255,.15);font-size:10px;margin-top:12px;letter-spacing:.5px}
+.name-row{display:flex;align-items:center;gap:8px;margin:3px 0}
+.name-row .hc{flex-shrink:0}
+.name-row .name-num{color:#556;font-size:12px;font-weight:700;min-width:20px}
+.name-row input{flex:1;padding:5px 10px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(255,255,255,.06);color:#fff;font-size:13px;outline:none;transition:.2s}
+.name-row input:focus{border-color:#8b5cf6;background:rgba(139,92,246,.1)}
+#name-inputs{max-height:220px;overflow-y:auto;margin:8px 0}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<!-- Etheral Shadow SVG Filter (fullscreen) -->
+<svg style="position:absolute;width:0;height:0">
+<defs>
+<filter id="etheral-filter" x="-10%" y="-10%" width="120%" height="120%">
+  <feTurbulence result="undulation" numOctaves="2" baseFrequency="0.0005,0.003" seed="0" type="turbulence"/>
+  <feColorMatrix id="etheral-hue" in="undulation" type="hueRotate" values="0"/>
+  <feColorMatrix in="dist" result="circulation" type="matrix" values="4 0 0 0 1  4 0 0 0 1  4 0 0 0 1  1 0 0 0 0"/>
+  <feDisplacementMap in="SourceGraphic" in2="circulation" scale="30" result="dist"/>
+  <feDisplacementMap in="dist" in2="undulation" scale="30" result="output"/>
+</filter>
+</defs>
+</svg>
+<div class="etheral-wrap" id="etheral-wrap">
+  <!-- SVG turbulence shadow layer -->
+  <div class="etheral-shadow-layer">
+    <div class="etheral-shadow-color"></div>
+  </div>
+  <!-- Orb glow layer -->
+  <div class="etheral-orb etheral-orb-1"></div>
+  <div class="etheral-orb etheral-orb-2"></div>
+  <div class="etheral-orb etheral-orb-3"></div>
+  <div class="etheral-orb etheral-orb-4"></div>
+  <div class="etheral-orb etheral-orb-5"></div>
+</div>
+<div class="etheral-noise" id="etheral-noise"></div>
+<div id="hud" class="h"><div id="timer">00:00:00</div></div>
+<div id="cd" class="h">3</div>
+<div id="ib" class="h"></div>
+
+<!-- LOGIN -->
+<div id="ov-login" class="ov">
+<div class="pn menu-pn">
+  <div class="menu-trophy">&#127942;</div>
+  <h1>AT YARISI</h1>
+  <h2>GIRIS YAP</h2>
+  <div class="menu-divider"></div>
+  <div style="margin:12px 0">
+    <div class="sr"><label>&#128100; Isim</label><input id="login-name" class="inp" type="text" placeholder="Ismin..." maxlength="15"></div>
+    <div class="sr"><label>&#128274; Sifre</label><input id="login-pass" class="inp" type="password" placeholder="****"></div>
+  </div>
+  <div id="login-err" style="color:#e94560;font-size:13px;min-height:20px"></div>
+  <button class="ab bs menu-go" onclick="G.login()">&#128275; GIRIS YAP</button>
+  <div class="menu-footer">v1.0 - Online Horse Racing</div>
+</div></div>
+
+<!-- LOBBY -->
+<div id="ov-lobby" class="ov h">
+<div class="pn lobby-pn">
+  <!-- Header -->
+  <div class="lobby-icon" style="position:relative;z-index:2">&#127942;</div>
+  <div class="lobby-name" style="position:relative;z-index:2">LOBBY</div>
+  <div class="lobby-welcome" style="position:relative;z-index:2" id="lobby-welcome">Hosgeldin!</div>
+
+  <div class="menu-divider" style="margin:20px 0;position:relative;z-index:2"></div>
+
+  <!-- Online Section -->
+  <div class="lobby-section" style="position:relative;z-index:2">
+    <div class="lobby-section-label">ONLINE</div>
+    <div class="lobby-cards">
+      <div class="lobby-card lobby-card-create" onclick="G.createOnlineRoom()">
+        <div class="lobby-card-icon">&#127760;</div>
+        <div class="lobby-card-title">ODA OLUSTUR</div>
+        <div class="lobby-card-desc">Yeni oda ac, arkadaslarini davet et</div>
+      </div>
+      <div class="lobby-card lobby-card-join">
+        <div class="lobby-card-icon">&#128273;</div>
+        <div class="lobby-card-title">KODLA KATIL</div>
+        <div style="display:flex;gap:6px;margin-top:8px;justify-content:center">
+          <input id="join-code" type="text" placeholder="KODU GIR" maxlength="6" class="lobby-code-input">
+          <button class="lobby-join-btn" onclick="G.joinWithCode()">&#10148;</button>
+        </div>
+        <div id="join-err" style="color:#ff6b6b;font-size:11px;min-height:16px;margin-top:4px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-divider" style="margin:16px 0;position:relative;z-index:2"></div>
+
+  <!-- Solo Section -->
+  <div class="lobby-section" style="position:relative;z-index:2">
+    <div class="lobby-section-label">SOLO</div>
+    <div class="lobby-card lobby-card-solo" onclick="G.showMenu()">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px">
+        <span style="font-size:28px">&#127918;</span>
+        <div style="text-align:left">
+          <div class="lobby-card-title" style="font-size:15px">TEK OYUNCU</div>
+          <div class="lobby-card-desc">Bilgisayara karsi yaris</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="margin-top:18px;position:relative;z-index:2">
+    <button class="lobby-logout" onclick="G.logout()">&#128682; Cikis Yap</button>
+  </div>
+  <div class="lobby-footer" style="position:relative;z-index:2" id="lobby-online">0 oyuncu online</div>
+</div></div>
+
+<!-- ROOM WAITING -->
+<div id="ov-room" class="ov h">
+<div class="pn">
+  <h1 id="room-title">ODA</h1>
+  <h2 id="room-code" style="color:#ffd700;font-size:20px;letter-spacing:4px">------</h2>
+  <div id="room-settings-area">
+    <div class="sr"><label>&#9728;&#65039; Hava</label><div class="ops" data-rk="weather"><button class="on amber" data-v="sunny">&#9728; Gunesli</button><button class="amber" data-v="rainy">&#127783; Yagmurlu</button></div></div>
+    <div class="sr"><label>&#127966; Pist</label><div class="ops" data-rk="track"><button class="on green" data-v="grass">&#127807; Cim</button><button class="green" data-v="sand">&#127958; Kum</button></div></div>
+    <div class="sr"><label>&#9201; Sure</label><span style="color:#3b82f6;font-weight:700;font-size:14px">60 saniye</span></div>
+  </div>
+  <div class="menu-divider"></div>
+  <div style="color:#556;font-size:12px;margin-bottom:6px">OYUNCULAR <span id="room-pcount">(0/10)</span></div>
+  <div id="room-players" style="max-height:200px;overflow-y:auto"></div>
+  <div class="menu-divider"></div>
+  <div style="display:flex;gap:8px;justify-content:center">
+    <button class="ab bs" id="ready-btn" onclick="G.toggleReady()">&#9989; HAZIRIM</button>
+    <button class="ab bm" onclick="G.leaveRoom()">&#128682; Cik</button>
+  </div>
+  <div id="room-status" style="color:#ffd700;font-size:14px;margin-top:8px"></div>
+</div></div>
+
+<div id="ov-menu" class="ov h">
+<div class="pn menu-pn">
+  <div class="menu-trophy">&#127942;</div>
+  <h1>AT YARISI</h1>
+  <h2>HORSE RACING SIMULATION</h2>
+  <div class="menu-divider"></div>
+  <div class="menu-settings">
+    <div class="sr"><label><span class="sr-icon">&#9728;&#65039;</span> Hava</label><div class="ops" data-k="weather" data-c="amber"><button class="on amber" data-v="sunny">&#9728; Gunesli</button><button class="amber" data-v="rainy">&#127783; Yagmurlu</button></div></div>
+    <div class="sr"><label><span class="sr-icon">&#127761;</span> Zaman</label><div class="ops" data-k="time" data-c="amber"><button class="on amber" data-v="day">&#127774; Gunduz</button><button class="amber" data-v="night">&#127769; Gece</button></div></div>
+    <div class="sr"><label><span class="sr-icon">&#127966;</span> Pist</label><div class="ops" data-k="track" data-c="green"><button class="on green" data-v="grass">&#127807; Cim</button><button class="green" data-v="sand">&#127958; Kum</button></div></div>
+    <div class="sr"><label><span class="sr-icon">&#9201;</span> Sure</label><div style="display:flex;align-items:center;gap:8px"><input type="number" min="10" max="300" value="60" id="duration-input" style="width:70px;padding:6px 10px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.06);color:#3b82f6;font-size:15px;font-weight:700;text-align:center;outline:none" oninput="CFG.duration=Math.max(10,Math.min(300,+this.value||60))"><span style="color:#6a7a8a;font-size:13px">saniye</span></div></div>
+    <div class="sr"><label><span class="sr-icon">&#127943;</span> At Sayisi</label><div style="display:flex;align-items:center;gap:10px"><input type="range" min="2" max="10" value="6" id="horse-count-slider" style="width:120px;accent-color:#8b5cf6" oninput="CFG.count=+this.value;document.getElementById('horse-count-val').textContent=this.value"><span id="horse-count-val" style="color:#8b5cf6;font-weight:700;font-size:16px;min-width:22px;text-align:center">6</span></div></div>
+  </div>
+  <div class="menu-divider"></div>
+  <button class="ab bs menu-go" onclick="G.showBet()">&#127943; DEVAM ET</button>
+  <br><button class="ab bm" onclick="G.showLobby()" style="margin-top:6px">&#128682; Geri</button>
+  <div class="menu-footer">v1.0 &middot; Online Horse Racing</div>
+</div></div>
+
+<div id="ov-bet" class="ov h">
+<div class="pn">
+  <h1>BAHIS YAP</h1>
+  <div class="md" id="mny">1000 TL</div>
+  <div style="color:#556;font-size:11px;margin-bottom:4px">-- AT ISIMLERI --</div>
+  <div id="name-inputs"></div>
+  <div class="menu-divider"></div>
+  <div style="color:#556;font-size:11px;margin-bottom:4px">-- AT SEC --</div>
+  <div class="hl" id="hlist"></div>
+  <div id="si">At ve bahis miktari sec</div>
+  <div style="color:#556;font-size:11px;margin-bottom:3px">-- BAHIS --</div>
+  <div class="br" id="brow"></div>
+  <br><button class="ab bs" id="gobtn" disabled onclick="G.go()">YARISI BASLAT!</button>
+  <br><button class="ab bm" onclick="G.showMenu()">Ayarlar</button>
+</div></div>
+
+<div id="ov-res" class="ov h">
+<div class="pn">
+  <h1>YARIS SONUCLARI</h1>
+  <div id="r-time" style="color:#889;margin-bottom:3px"></div>
+  <div id="r-info" style="color:#5a8;font-size:11px;margin-bottom:6px"></div>
+  <div id="r-bet" style="font-size:17px;margin:6px 0"></div>
+  <table class="rt"><thead><tr><th>Sira</th><th>At</th><th>Sure</th></tr></thead><tbody id="r-body"></tbody></table>
+  <div class="md" id="r-money"></div>
+  <br><button class="ab bp" onclick="G.replay()">TEKRAR OYNA</button>
+  <button class="ab bm" onclick="G.showMenu()">ANA MENU</button>
+</div></div>
+
+<script>
+// =========================================================
+// FIREBASE INIT
+// =========================================================
+let db = null;
+try {
+  firebase.initializeApp(APP_CONFIG.firebase);
+  db = firebase.database();
+} catch(e) { console.warn('Firebase init failed:', e.message); }
+
+// =========================================================
+// ETHERAL SHADOW HUE ANIMATION
+// =========================================================
+(function(){
+  var hueEl=document.getElementById('etheral-hue');
+  if(!hueEl)return;
+  var hue=0;
+  function tick(){hue=(hue+0.6)%360;hueEl.setAttribute('values',String(hue));requestAnimationFrame(tick);}
+  tick();
+})();
+
+// =========================================================
+// SEEDED RANDOM (deterministik yaris icin)
+// =========================================================
+let _seed = 12345;
+function seedRandom(s){ _seed = s; }
+function sRand(){
+  _seed = (_seed * 16807 + 0) % 2147483647;
+  return (_seed - 1) / 2147483646;
+}
+
+// =========================================================
+// ONLINE STATE
+// =========================================================
+let OL = {
+  playerName: localStorage.getItem('horseName') || '',
+  loggedIn: false,
+  roomCode: null,
+  isHost: false,
+  roomRef: null,
+  roomData: null,
+  listeners: [],
+  mode: 'offline' // 'offline' | 'online'
+};
+
+// =========================================================
+// REAL SPRITESHEET - LPC Horse (OpenGameArt.org, CC0)
+// =========================================================
+const SPRITE_SRC = 'data:image/png;base64,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';
+
+// LPC Horse spritesheet: 512x1024, 4 columns
+// Gallop right = rows 0-2 (11 frames): row0=4fr, row1=4fr, row2=3fr
+// Each cell = 128x128 but horse uses ~128x93
+const SHEET_COLS = 4, CELL_W = 128, CELL_H = 128, GALLOP_FRAMES = 11;
+const CFG={weather:'sunny',time:'day',track:'grass',duration:60,count:6};
+const NAMES=['Yildirim','Kasirga','Ruzgar','Sahin','Bora','Alev','Tornado','Simsek','Bulut','Kartal'];
+const JOCK_C=['#E63946','#FF69B4','#7C3AED','#F59E0B','#2563EB','#16A34A','#EA580C','#0891B2','#94A3B8','#9333EA'];
+const BODY_C=['#6B3A2E','#C8A87C','#F0EAE0','#8B5E3C','#1E1410','#B87C3C','#4A2A1A','#D4C4B0','#2E2218','#A06030'];
+// Hue shifts for vivid distinct horse colors (degrees)
+// 0=kahve(orijinal), 40=altin, 180=mavi, 90=yesil, 270=mor, 320=pembe, 140=turkuaz, 210=lacivert, 350=kirmizi, 60=sari
+const HUE_SHIFTS=[0,40,180,90,270,320,140,210,350,60];
+const BETS=[50,100,200,500];
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+let W,H;
+let horses=[],money=1000,selHorse=-1,selBet=0,finishOrder=[];
+let raceState='idle',raceTime=0,countdownTime=3,finishX=0,rain=[];
+function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;if(finishX<100)finishX=W*.88;}
+resize(); addEventListener('resize',resize);
+
+// =========================================================
+// LOAD LPC HORSE SPRITESHEET & CREATE COLOR VARIANTS
+// =========================================================
+const baseSheet = new Image();
+baseSheet.src = 'lpc_horse.png'; // 512x1024, Muybridge-based gallop
+let colorSheets = []; // [horseIndex] = canvas with recolored spritesheet
+let sheetsReady = false;
+
+baseSheet.onload = function(){
+  for(let i=0;i<10;i++){
+    const oc = document.createElement('canvas');
+    oc.width = baseSheet.width;
+    oc.height = baseSheet.height;
+    const octx = oc.getContext('2d');
+    octx.drawImage(baseSheet, 0, 0);
+
+    // Stronger hue shift + saturation boost for vivid colors
+    const imgData = octx.getImageData(0, 0, oc.width, oc.height);
+    const d = imgData.data;
+    for(let p=0; p<d.length; p+=4){
+      if(d[p+3]<10) continue;
+      const [h,s,l]=rgbToHsl(d[p],d[p+1],d[p+2]);
+      // Even index 0 gets slight saturation boost
+      const newH = (h+HUE_SHIFTS[i]/360)%1;
+      const newS = Math.min(s*2.2+0.2, 1);
+      const newL = Math.max(0.08, Math.min(l*0.9+0.05, 0.85));
+      const [nr,ng,nb]=hslToRgb(newH, newS, newL);
+      d[p]=nr; d[p+1]=ng; d[p+2]=nb;
+    }
+    octx.putImageData(imgData, 0, 0);
+
+    colorSheets.push(oc);
+  }
+  sheetsReady = true;
+};
+
+function rgbToHsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h,s,l=(mx+mn)/2;
+  if(mx===mn){h=s=0;}else{const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);
+    switch(mx){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;}h/=6;}
+  return[h,s,l];}
+function hslToRgb(h,s,l){let r,g,b;if(s===0){r=g=b=l;}else{
+    const hue2rgb=(p,q,t)=>{if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;};
+    const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;r=hue2rgb(p,q,h+1/3);g=hue2rgb(p,q,h);b=hue2rgb(p,q,h-1/3);}
+  return[Math.round(r*255),Math.round(g*255),Math.round(b*255)];}
+
+// =========================================================
+// SETTINGS UI
+// =========================================================
+document.querySelectorAll('.ops').forEach(g=>{
+  const k=g.dataset.k;
+  g.querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{g.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+      const v=b.dataset.v;if(k==='duration')CFG.duration=+v;else if(k==='count')CFG.count=+v;else CFG[k]=v;};
+  });
+});
+
+// =========================================================
+// CONTROLLER
+// =========================================================
+const G={};
+const hideAll=()=>{['ov-login','ov-lobby','ov-room','ov-menu','ov-bet','ov-res','hud','cd','ib'].forEach(id=>{try{hide(id)}catch(e){}});};
+function showEtheral(){$('etheral-wrap').style.display='';$('etheral-noise').style.display='';}
+function hideEtheral(){$('etheral-wrap').style.display='none';$('etheral-noise').style.display='none';}
+
+// === PRESENCE ===
+let presenceRef=null, onlineCountRef=null, onlineListener=null;
+function goOnline(){
+  if(!db||!OL.playerName)return;
+  presenceRef=db.ref('presence/'+OL.playerName);
+  presenceRef.set(true);
+  presenceRef.onDisconnect().remove();
+}
+function goOffline(){
+  if(presenceRef){presenceRef.remove();presenceRef=null;}
+}
+function listenOnlineCount(){
+  if(!db)return;
+  if(onlineListener){db.ref('presence').off('value',onlineListener);onlineListener=null;}
+  onlineCountRef=db.ref('presence');
+  onlineListener=onlineCountRef.on('value',snap=>{
+    const count=snap.numChildren();
+    const el=$('lobby-online');
+    if(el) el.textContent=count+' oyuncu online';
+  });
+}
+function stopListenOnlineCount(){
+  if(onlineCountRef&&onlineListener){onlineCountRef.off('value',onlineListener);onlineListener=null;}
+}
+
+// === LOGIN ===
+G.login=()=>{
+  const name=$('login-name').value.trim();
+  const pass=$('login-pass').value;
+  if(!name||name.length<2){$('login-err').textContent='Isim en az 2 karakter olmali';return;}
+  if(pass!==APP_CONFIG.password){$('login-err').textContent='Yanlis sifre!';return;}
+  OL.playerName=name;OL.loggedIn=true;
+  localStorage.setItem('horseName',name);
+  $('login-err').textContent='';
+  goOnline();
+  G.showLobby();
+};
+G.logout=()=>{goOffline();stopListenOnlineCount();OL.loggedIn=false;OL.playerName='';localStorage.removeItem('horseName');hideAll();show('ov-login');};
+
+// === LOBBY ===
+G.showLobby=()=>{hideAll();show('ov-lobby');$('lobby-welcome').textContent='Hosgeldin, '+OL.playerName+'!';listenOnlineCount();};
+
+// === ONLINE ===
+G.createOnlineRoom=()=>{
+  if(!db){alert('Firebase baglantisi yok! config.js kontrol edin.');return;}
+  hideAll();show('ov-room');
+  createRoom();
+};
+G.joinWithCode=()=>{
+  if(!db){alert('Firebase baglantisi yok! config.js kontrol edin.');return;}
+  const code=$('join-code').value.trim().toUpperCase();
+  if(!code||code.length<4){$('join-err').textContent='Gecerli bir oda kodu gir';return;}
+  $('join-err').textContent='';
+  // Oda var mi kontrol et
+  db.ref('rooms/'+code).once('value',snap=>{
+    const data=snap.val();
+    if(!data){$('join-err').textContent='Oda bulunamadi!';return;}
+    if(data.state!=='waiting'){$('join-err').textContent='Yaris basladi, katilim kapandi!';return;}
+    const pcount=data.players?Object.keys(data.players).length:0;
+    if(pcount>=10){$('join-err').textContent='Oda dolu!';return;}
+    hideAll();show('ov-room');
+    joinRoom(code);
+  });
+};
+
+// === ROOM FUNCTIONS ===
+function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<6;i++)r+=c[Math.random()*c.length|0];return r;}
+
+function createRoom(){
+  const code=genCode();
+  OL.roomCode=code;OL.isHost=true;
+  const roomData={
+    host:OL.playerName,
+    state:'waiting',
+    settings:{weather:'sunny',time:'day',track:'grass',duration:60},
+    seed:Math.random()*2147483647|0,
+    players:{}
+  };
+  roomData.players[OL.playerName]={name:OL.playerName,ready:false,lane:0};
+  db.ref('rooms/'+code).set(roomData).then(()=>{
+    listenRoom(code);
+    $('room-title').textContent='ODA (Host)';
+  });
+}
+
+function joinRoom(code){
+  OL.roomCode=code;OL.isHost=false;
+  db.ref('rooms/'+code).once('value',snap=>{
+    const data=snap.val();
+    if(!data||data.state!=='waiting'){alert('Oda bulunamadi veya yaris basladi');G.showLobby();return;}
+    const pcount=data.players?Object.keys(data.players).length:0;
+    if(pcount>=10){alert('Oda dolu!');G.showLobby();return;}
+    // Katil
+    db.ref('rooms/'+code+'/players/'+OL.playerName).set({name:OL.playerName,ready:false,lane:pcount});
+    listenRoom(code);
+    $('room-title').textContent='ODA';
+  });
+}
+
+function listenRoom(code){
+  // Onceki listener'lari temizle
+  OL.listeners.forEach(l=>l.off());OL.listeners=[];
+  OL.roomRef=db.ref('rooms/'+code);
+  const ref=OL.roomRef;
+
+  const listener=ref.on('value',snap=>{
+    const data=snap.val();
+    if(!data){G.showLobby();return;}
+    OL.roomData=data;
+    updateRoomUI(data,code);
+
+    // Otomatik baslama: min 2 kisi + herkes hazir
+    if(data.state==='waiting'){
+      const players=data.players?Object.values(data.players):[];
+      if(players.length>=2 && players.every(p=>p.ready)){
+        if(OL.isHost){
+          // Host countdown baslatir
+          ref.update({state:'countdown',seed:Math.random()*2147483647|0});
+        }
+      }
+    }
+
+    // Countdown basladi
+    if(data.state==='countdown' && raceState!=='countdown' && raceState!=='racing'){
+      startOnlineRace(data);
+    }
+  });
+  OL.listeners.push({off:()=>ref.off('value',listener)});
+
+  // Disconnect'te oyuncuyu sil
+  db.ref('rooms/'+code+'/players/'+OL.playerName).onDisconnect().remove();
+}
+
+function updateRoomUI(data,code){
+  $('room-code').textContent='Kod: '+code;
+  const players=data.players?Object.values(data.players):[];
+  $('room-pcount').textContent='('+players.length+'/10)';
+
+  // Oyuncu listesi
+  let html='';
+  players.forEach((p,i)=>{
+    const isMe=p.name===OL.playerName;
+    const isHost=p.name===data.host;
+    const status=p.ready?'<span class="rp-status rp-ready">Hazir</span>':'<span class="rp-status rp-wait">Bekliyor</span>';
+    const hostBadge=isHost?'<span class="rp-host">[HOST]</span>':'';
+    const nameStyle=isMe?'color:#ffd700;font-weight:700':'';
+    html+=`<div class="rp"><span class="rp-name" style="${nameStyle}">${i+1}. ${p.name}${hostBadge}</span>${status}</div>`;
+  });
+  $('room-players').innerHTML=html;
+
+  // Ayarlari goster
+  const s=data.settings||{};
+  document.querySelectorAll('[data-rk]').forEach(g=>{
+    const k=g.dataset.rk;
+    g.querySelectorAll('button').forEach(b=>{
+      b.classList.toggle('on',b.dataset.v===(s[k]+''));
+    });
+    // Sadece host degistirebilir
+    g.querySelectorAll('button').forEach(b=>{b.disabled=!OL.isHost;b.style.opacity=OL.isHost?'1':'.6';});
+  });
+
+  // Status
+  if(data.state==='waiting'){
+    const allReady=players.length>=2&&players.every(p=>p.ready);
+    $('room-status').textContent=players.length<2?'En az 2 oyuncu gerekli...':allReady?'Yaris basliyor!':'Oyuncularin hazir olmasini bekle...';
+  } else if(data.state==='countdown'){
+    $('room-status').textContent='Geri sayim!';
+  }
+}
+
+function startOnlineRace(data){
+  OL.mode='online';
+  hideAll();show('hud');
+  $('timer').textContent='00:00:00';show('ib');
+  const s=data.settings||{};
+  CFG.weather=s.weather||'sunny';CFG.time=s.time||'day';CFG.track=s.track||'grass';CFG.duration=60;
+
+  // Oyuncu sayisi = at sayisi
+  const players=data.players?Object.values(data.players):[];
+  CFG.count=players.length;
+
+  // Oyuncu isimlerini ata ata
+  playerNames=players.map(p=>p.name);
+
+  const w=CFG.weather==='sunny'?'Gunesli':'Yagmurlu',t=CFG.time==='day'?'Gunduz':'Gece',r=CFG.track==='grass'?'Cim':'Kum';
+  $('ib').innerHTML=`${w} | ${t} | ${r} Pist<br>${CFG.duration}sn | ${CFG.count} Oyuncu | ONLINE`;
+
+  // Deterministik seed
+  seedRandom(data.seed||12345);
+  initRace(true); // true = seeded
+  hideEtheral();
+  raceState='countdown';countdownTime=3;finishOrder=[];show('cd');$('cd').textContent='3';
+}
+
+G.toggleReady=()=>{
+  if(!OL.roomRef||!OL.roomData)return;
+  const cur=OL.roomData.players?.[OL.playerName]?.ready||false;
+  db.ref('rooms/'+OL.roomCode+'/players/'+OL.playerName+'/ready').set(!cur);
+};
+
+G.leaveRoom=()=>{
+  if(OL.roomRef){
+    db.ref('rooms/'+OL.roomCode+'/players/'+OL.playerName).remove();
+    // Host cikiyorsa odayi sil
+    if(OL.isHost) db.ref('rooms/'+OL.roomCode).remove();
+    OL.listeners.forEach(l=>l.off());OL.listeners=[];
+    OL.roomRef=null;OL.roomCode=null;
+  }
+  G.showLobby();
+};
+
+// Room settings change (host only)
+document.querySelectorAll('[data-rk]').forEach(g=>{
+  const k=g.dataset.rk;
+  g.querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{
+      if(!OL.isHost||!OL.roomCode)return;
+      const v=b.dataset.v;
+      const val=k==='duration'?parseInt(v):v;
+      db.ref('rooms/'+OL.roomCode+'/settings/'+k).set(val);
+    };
+  });
+});
+
+// === OFFLINE (TEK OYUNCU) ===
+let playerNames=[]; // online: oyuncu isimleri, offline: at isimleri
+
+G.showMenu=()=>{hideAll();show('ov-menu');OL.mode='offline';raceState='idle';playerNames=[];};
+G.showBet=()=>{hideAll();show('ov-bet');selHorse=-1;selBet=0;
+  $('mny').textContent=money+' TL';$('gobtn').disabled=true;$('si').textContent='At ve bahis miktari sec';
+  // Isim inputlarini olustur
+  buildNameInputs();
+  playerNames=readNameInputs();
+  initRace(false);buildHL();buildBR();};
+G.go=()=>{if(selHorse<0||selBet<=0)return;playerNames=readNameInputs();money-=selBet;hideAll();show('hud');
+  $('timer').textContent='00:00:00';show('ib');
+  const w=CFG.weather==='sunny'?'Gunesli':'Yagmurlu',t=CFG.time==='day'?'Gunduz':'Gece',r=CFG.track==='grass'?'Cim':'Kum';
+  $('ib').innerHTML=`${w} | ${t} | ${r} Pist<br>${CFG.duration}sn | ${CFG.count} At`;
+  hideEtheral();raceState='countdown';countdownTime=3;finishOrder=[];show('cd');$('cd').textContent='3';};
+G.replay=()=>{
+  hide('ov-res');
+  if(OL.mode==='online'){
+    // Online: odaya don, state'i waiting'e cevir
+    if(OL.isHost&&OL.roomRef){
+      OL.roomRef.update({state:'waiting'});
+      db.ref('rooms/'+OL.roomCode+'/players').once('value',s=>{
+        const ps=s.val();if(ps)Object.keys(ps).forEach(k=>db.ref('rooms/'+OL.roomCode+'/players/'+k+'/ready').set(false));
+      });
+    }
+    hideAll();show('ov-room');
+  } else {
+    if(money<=0)money=1000;G.showBet();
+  }
+};
+function $(id){return document.getElementById(id)}
+function show(id){$(id).classList.remove('h')}
+function hide(id){$(id).classList.add('h')}
+
+function buildNameInputs(){
+  const el=$('name-inputs');el.innerHTML='';
+  for(let i=0;i<CFG.count;i++){
+    const row=document.createElement('div');row.className='name-row';
+    row.innerHTML=`<div class="hc" style="background:${JOCK_C[i]}"></div><span class="name-num">${i+1}.</span><input type="text" maxlength="15" placeholder="${NAMES[i]}" value="${NAMES[i]}" data-idx="${i}">`;
+    const inp=row.querySelector('input');
+    inp.onchange=()=>{playerNames=readNameInputs();initRace(false);buildHL();};
+    el.appendChild(row);
+  }
+}
+function readNameInputs(){
+  const inputs=$('name-inputs').querySelectorAll('input');
+  const names=[];
+  inputs.forEach((inp,i)=>{const v=inp.value.trim();names.push(v||NAMES[i]||'At '+(i+1));});
+  return names;
+}
+function buildHL(){
+  const el=$('hlist');el.innerHTML='';
+  for(let i=0;i<CFG.count;i++){const o=getOdds(horses[i].baseSpeed);const d=document.createElement('div');d.className='hi';
+    d.innerHTML=`<div class="hc" style="background:${JOCK_C[i]}"></div><span class="hn">${i+1}. ${playerNames[i]||NAMES[i]}</span><span class="ho">x${o.toFixed(1)}</span>`;
+    d.onclick=(idx=>()=>{document.querySelectorAll('.hi').forEach((x,j)=>x.classList.toggle('sel',j===idx));selHorse=idx;updI();})(i);
+    el.appendChild(d);}
+}
+function buildBR(){
+  const el=$('brow');el.innerHTML='';
+  BETS.forEach(b=>{const btn=document.createElement('button');btn.className='bb';btn.textContent=b+' TL';
+    if(b>money)btn.style.opacity='.3';
+    btn.onclick=()=>{if(b>money)return;selBet=b;document.querySelectorAll('.bb').forEach(x=>x.classList.remove('on'));btn.classList.add('on');updI();};
+    el.appendChild(btn);});
+}
+function updI(){
+  const el=$('si');
+  if(selHorse>=0&&selBet>0){const o=getOdds(horses[selHorse].baseSpeed);
+    el.innerHTML=`<span style="color:${JOCK_C[selHorse]}">${playerNames[selHorse]||NAMES[selHorse]}</span> | ${selBet} TL | x${o.toFixed(1)} | Kazanc: ${Math.round(selBet*o)} TL`;
+    $('gobtn').disabled=false;}else{el.textContent='At ve bahis miktari sec';$('gobtn').disabled=true;}
+}
+function getOdds(s){return Math.round((8-6.5*(s/5))*10)/10}
+
+// =========================================================
+// RACE INIT
+// =========================================================
+function initRace(seeded){
+  horses=[];finishOrder=[];raceTime=0;
+  const R=seeded?sRand:Math.random; // deterministik veya normal random
+  const sm=CFG.track==='grass'?(CFG.weather==='sunny'?1:.9):(CFG.weather==='sunny'?.85:.75);
+  finishX=Math.max(W*.88, 800);
+  if(playerNames.length<CFG.count) playerNames=NAMES.slice(0,CFG.count);
+  for(let i=0;i<CFG.count;i++){const bs=2.8+R()*0.8;
+    horses.push({baseSpeed:bs,currentSpeed:0,targetSpeed:bs,speedMult:sm,x:90,lane:i,
+      name:playerNames[i]||NAMES[i],
+      finished:false,finishTime:0,finishPos:0,animTime:R()*10,frame:0,
+      stamina:.7+R()*.6,accel:.5+R()*1,
+      burstTimer:3+R()*8,burstDur:0,strategy:R(),fatigue:0,
+      stumbleTimer:15+R()*30,stumbleDur:0,
+      drafting:0,luck:0.8+R()*0.4
+    });}
+  rain=[];if(CFG.weather==='rainy')for(let i=0;i<100;i++)rain.push({x:Math.random()*W,y:Math.random()*H,s:6+Math.random()*8,l:10+Math.random()*15});
+}
+
+// =========================================================
+// GAME LOOP
+// =========================================================
+let lt=performance.now();
+function loop(ts){
+  const raw=(ts-lt)/1000;
+  // If tab was backgrounded, raw can be huge - just skip that frame
+  const dt=raw>0.5?0:Math.min(raw,.05);
+  lt=ts;
+  update(dt);draw();
+  requestAnimationFrame(loop);
+}
+// Fallback: also tick via setInterval for when rAF is throttled
+setInterval(()=>{
+  const now=performance.now();
+  const raw=(now-lt)/1000;
+  if(raw>0.1){// rAF hasn't fired recently
+    const dt=Math.min(raw,.05);
+    lt=now;
+    update(dt);draw();
+  }
+},50);
+
+function update(dt){
+  if(raceState==='countdown'){countdownTime-=dt;const el=$('cd');
+    if(countdownTime>0)el.textContent=Math.ceil(countdownTime);
+    else{el.textContent='BASLA!';if(countdownTime<-.5){hide('cd');raceState='racing';raceTime=0;}}}
+  if(raceState==='racing'){
+    raceTime+=dt;$('timer').textContent=fmt(raceTime);
+    const dist=finishX-90,rate=dist/CFG.duration,avg=3.1;
+    // Lider ati bul (en ondeki)
+    let leaderX = 0;
+    horses.forEach(h=>{ if(!h.finished && h.x > leaderX) leaderX = h.x; });
+
+    horses.forEach(h=>{if(h.finished)return;
+      const prog=(h.x-90)/dist;
+
+      // === STRATEJI (hafif etki) ===
+      let sm=1;
+      if(h.strategy<.3)sm=1.08-prog*.2;       // erken kosucu: basta biraz hizli
+      else if(h.strategy>.7)sm=.92+prog*.2;    // gec kosucu: sonda hizlanir
+      else sm=1+Math.sin(prog*Math.PI)*.05;    // dengeli
+
+      // === ENERJI PATLAMASI (sik ve etkili) ===
+      h.burstTimer-=dt;let bm=1;
+      if(h.burstTimer<=0&&h.burstDur<=0){
+        h.burstDur=1+Math.random()*2;
+        h.burstTimer=3+Math.random()*6; // daha sik patlama
+      }
+      if(h.burstDur>0){h.burstDur-=dt;bm=1.25+Math.random()*.15;}
+
+      // === TOKEZLEME (yavaslatma) ===
+      h.stumbleTimer-=dt;
+      let stm=1;
+      if(h.stumbleTimer<=0&&h.stumbleDur<=0){
+        h.stumbleDur=0.5+Math.random()*1.5;
+        h.stumbleTimer=12+Math.random()*25;
+      }
+      if(h.stumbleDur>0){h.stumbleDur-=dt;stm=0.5+Math.random()*0.2;} // ciddi yavaslar
+
+      // === LIDER YORGUNLUGU (onde olan daha cok yorulur) ===
+      const isLeader = h.x >= leaderX - 20;
+      h.fatigue+=dt*(.003+(.004*(1.2-h.stamina)))*(isLeader?1.8:1);
+      const fm=Math.max(.65,1-h.fatigue);
+
+      // === DRAFTING / SLIPSTREAM (arkadan gelen avantaj) ===
+      const distToLeader = leaderX - h.x;
+      h.drafting = (distToLeader > 30 && distToLeader < 200) ? 1.08 : 1.0;
+
+      // === KALKIS ===
+      const sa=Math.min(1,raceTime/(1.5+h.accel*1.5));
+
+      // === RASTGELE VARYASYON (buyuk salinimlar) ===
+      if(Math.random()<.1){
+        h.targetSpeed=h.baseSpeed+(Math.random()-0.5)*1.4*h.luck;
+      }
+      h.currentSpeed+=(h.targetSpeed-h.currentSpeed)*dt*2.5;
+
+      // === FINAL SPRINT (son %25 - dramatik) ===
+      let sp=1;
+      if(prog>.75){
+        sp=1+(prog-.75)*3*h.stamina*h.luck; // buyuk fark yaratabilir
+        // Gec kosucular burada patlar
+        if(h.strategy>.7) sp*=1.15;
+      }
+
+      // === SANS FAKTORU (surekli kucuk varyasyon) ===
+      const luckMod = 0.95 + Math.random()*0.1*h.luck;
+
+      // === TOPLAM HIZ ===
+      const fs=h.currentSpeed*sm*bm*stm*fm*sa*sp*h.drafting*luckMod;
+      h.x+=rate*(fs/avg)*h.speedMult*dt;
+      h.animTime+=dt*Math.max(fs/avg,.3)*8;
+      h.frame=Math.floor(h.animTime)%GALLOP_FRAMES;
+      if(h.x>=finishX){h.finished=true;h.finishTime=raceTime;finishOrder.push(h);h.finishPos=finishOrder.length;}
+    });
+    if(finishOrder.length>=horses.length){raceState='finished';setTimeout(showResults,700);}
+  }
+  if(CFG.weather==='rainy')rain.forEach(r=>{r.x-=r.s*.3*60*dt;r.y+=r.s*60*dt;if(r.y>H){r.y=-20;r.x=Math.random()*W;}if(r.x<0)r.x=W;});
+}
+function fmt(t){const m=t/60|0,s=t%60|0,c=(t*100)%100|0;return`${(m+'').padStart(2,'0')}:${(s+'').padStart(2,'0')}:${(c+'').padStart(2,'0')}`}
+
+// =========================================================
+// DRAW
+// =========================================================
+function draw(){cx.clearRect(0,0,W,H);drawBg();drawTrack();drawHorses();drawFinish();drawFx();}
+
+function drawBg(){
+  let g;
+  if(CFG.time==='night'){g=cx.createLinearGradient(0,0,0,H*.4);g.addColorStop(0,'#080818');g.addColorStop(1,'#141430');}
+  else if(CFG.weather==='rainy'){g=cx.createLinearGradient(0,0,0,H*.4);g.addColorStop(0,'#4a5568');g.addColorStop(1,'#718096');}
+  else{g=cx.createLinearGradient(0,0,0,H*.4);g.addColorStop(0,'#6BB5E0');g.addColorStop(1,'#A8D8EA');}
+  cx.fillStyle=g;cx.fillRect(0,0,W,H*.4);
+  const c1=CFG.time==='night'?'#0d1f0d':CFG.weather==='rainy'?'#2a4a2a':'#3a7a3a';
+  const c2=CFG.time==='night'?'#061206':CFG.weather==='rainy'?'#1e3a1e':'#2a6a2a';
+  [[.15,.38,.4,.1,c2],[.55,.36,.45,.12,c2],[.85,.37,.35,.09,c2],[0,.4,.35,.07,c1],[.4,.39,.4,.06,c1],[.75,.4,.3,.05,c1]].forEach(([px,py,pw,ph,c])=>{
+    cx.fillStyle=c;cx.beginPath();cx.moveTo(W*px-W*pw/2,H*py+H*ph);cx.quadraticCurveTo(W*px,H*py-H*ph,W*px+W*pw/2,H*py+H*ph);cx.fill();});
+  if(CFG.time==='night'){cx.fillStyle='#fff';for(let i=0;i<50;i++){cx.globalAlpha=.3+(i%4)*.15;cx.beginPath();cx.arc((i*137.5)%W,(i*73.3)%(H*.35),.5+(i%3),0,Math.PI*2);cx.fill();}cx.globalAlpha=1;
+    cx.fillStyle='rgba(255,255,220,.12)';cx.beginPath();cx.arc(W*.82,H*.08,45,0,Math.PI*2);cx.fill();cx.fillStyle='#FFFDE0';cx.beginPath();cx.arc(W*.82,H*.08,18,0,Math.PI*2);cx.fill();}
+  else if(CFG.weather!=='rainy'){cx.fillStyle='rgba(255,255,255,.75)';[[.12,.08],[.38,.06],[.62,.1],[.85,.05]].forEach(([px,py])=>{const x=W*px,y=H*py;cx.beginPath();cx.arc(x,y,22,0,Math.PI*2);cx.arc(x+18,y-6,17,0,Math.PI*2);cx.arc(x-15,y+2,15,0,Math.PI*2);cx.fill();});}
+  else{cx.fillStyle='rgba(50,60,70,.85)';for(let i=0;i<6;i++){const x=W*(.08+i*.17),y=H*.06;cx.beginPath();cx.arc(x,y,30,0,Math.PI*2);cx.arc(x+22,y-8,24,0,Math.PI*2);cx.arc(x-18,y+4,20,0,Math.PI*2);cx.fill();}}
+  // Grandstands
+  [.12,.8].forEach(px=>{const x=W*px,y=H*.32,w=W*.13,h=H*.09;
+    cx.fillStyle=CFG.time==='night'?'#2a2a2a':'#8a8a8a';cx.fillRect(x-w/2,y,w,h);
+    cx.fillStyle=CFG.time==='night'?'#1a1a1a':'#666';cx.fillRect(x-w/2-5,y-5,w+10,7);
+    for(let r=0;r<4;r++)for(let c=0;c<10;c++){cx.fillStyle=['#2a2a2a','#e63946','#457b9d','#f4a261','#2a9d8f','#e9c46a','#555','#888'][(r*10+c)%8];cx.beginPath();cx.arc(x-w*.44+c*(w*.88/9),y+h*.15+r*h*.22,2.5,Math.PI,0);cx.fill();}
+    const fc=['#e63946','#ffd700','#3b82f6','#a855f7','#22c55e'];
+    for(let i=0;i<Math.floor(w/8);i++){cx.fillStyle=fc[i%5];const fx=x-w/2+i*8+4;cx.beginPath();cx.moveTo(fx,y-1);cx.lineTo(fx+4,y-1);cx.lineTo(fx+2,y+5);cx.fill();}
+    ['#e63946','#ffd700','#3b82f6'].forEach((c,i)=>{const fx=x-w*.3+i*(w*.3);cx.fillStyle='#888';cx.fillRect(fx,y-18,2,15);cx.fillStyle=c;cx.fillRect(fx+2,y-18,9,6);});
+  });
+}
+
+function drawTrack(){
+  const tt=tTop(),tb=tBot(),lh=(tb-tt)/CFG.count;
+  const mc=CFG.track==='grass'?'#3a7a30':'#C4A265';const ac=CFG.track==='grass'?'#347028':'#B8945A';
+  for(let i=0;i<CFG.count;i++){cx.fillStyle=i%2===0?mc:ac;cx.fillRect(0,tt+i*lh,W,lh);}
+  cx.strokeStyle='rgba(255,255,255,.6)';cx.lineWidth=2.5;cx.beginPath();cx.moveTo(0,tt);cx.lineTo(W,tt);cx.moveTo(0,tb);cx.lineTo(W,tb);cx.stroke();
+  cx.fillStyle='#fff';for(let x=25;x<W;x+=50){cx.fillRect(x,tt-6,2.5,8);cx.fillRect(x,tb-2,2.5,8);}
+  const fc=['#e63946','#ffd700','#3b82f6','#22c55e','#ff8c00'];
+  for(let x=12;x<W;x+=14){cx.fillStyle=fc[(x/14|0)%5];cx.beginPath();cx.moveTo(x,tt-7);cx.lineTo(x+5,tt-7);cx.lineTo(x+2.5,tt);cx.fill();}
+  for(let i=0;i<CFG.count;i++){const cy=tt+i*lh+lh/2;cx.fillStyle='rgba(255,255,255,.75)';cx.beginPath();cx.arc(22,cy,12,0,Math.PI*2);cx.fill();cx.fillStyle='#333';cx.font='bold 14px sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(i+1,22,cy);}
+  cx.strokeStyle='rgba(255,255,255,.4)';cx.lineWidth=1.5;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(82,tt);cx.lineTo(82,tb);cx.stroke();cx.setLineDash([]);
+  cx.fillStyle=CFG.track==='grass'?'#2d6b25':'#a08050';cx.fillRect(0,tb,W,H-tb);
+}
+
+// Pre-render each horse+frame into offscreen canvases for performance
+let proSprites=[]; // [horseIdx][frame] = offscreen canvas
+function buildProSprites(){
+  proSprites=[];
+  const SW=160,SH=120; // sprite canvas size
+  for(let i=0;i<CFG.count;i++){
+    const frames=[];
+    for(let f=0;f<6;f++){
+      const oc=document.createElement('canvas');oc.width=SW;oc.height=SH;
+      const c=oc.getContext('2d');
+      c.translate(SW/2, SH*0.75);
+      drawProHorse(c, BODY_C[i], JOCK_C[i], i+1, f);
+      frames.push(oc);
+    }
+    proSprites.push(frames);
+  }
+}
+
+// 6-frame gallop: leg angles [frontL, frontR, backL, backR], body bounce, neck angle
+const GALLOP=[
+  {fl:-45,fr:15, bl:30,br:-20, by:0, nk:-50, tail:30},  // collected
+  {fl:-60,fr:-10,bl:50,br:15,  by:-3,nk:-55, tail:45},  // push
+  {fl:-30,fr:-55,bl:20,br:50,  by:-5,nk:-48, tail:55},  // airborne
+  {fl:20, fr:-40,bl:-15,br:35, by:-3,nk:-52, tail:40},  // landing
+  {fl:45, fr:10, bl:-40,br:10, by:0, nk:-50, tail:25},  // reach
+  {fl:15, fr:40, bl:-10,br:-35,by:2, nk:-46, tail:35},  // gather
+];
+
+function drawProHorse(c, bc, jc, num, frame){
+  const g=GALLOP[frame%6];
+  const dk=(hex,f)=>{const m=hex.match(/\w\w/g).map(x=>parseInt(x,16));return`rgb(${m[0]*f|0},${m[1]*f|0},${m[2]*f|0})`};
+  const lt=(hex,f)=>{const m=hex.match(/\w\w/g).map(x=>parseInt(x,16));return`rgb(${Math.min(255,m[0]*f)|0},${Math.min(255,m[1]*f)|0},${Math.min(255,m[2]*f)|0})`};
+  const mane=dk(bc,.35), darkB=dk(bc,.7), lightB=lt(bc,1.15);
+
+  c.save();
+  c.translate(0, g.by);
+
+  // === FAR LEGS (darker, behind body) ===
+  proLeg(c,-22,12,g.bl,darkB);
+  proLeg(c,18,12,g.fl,darkB);
+
+  // === TAIL ===
+  c.save();c.translate(-40,-8);c.rotate(g.tail*Math.PI/180);
+  c.fillStyle=mane;c.beginPath();
+  c.moveTo(0,0);c.bezierCurveTo(-5,8,-12,20,-8,35);
+  c.bezierCurveTo(-4,30,0,22,3,14);c.bezierCurveTo(4,6,2,2,0,0);c.fill();
+  c.restore();
+
+  // === BODY (smooth athletic shape) ===
+  c.fillStyle=bc;c.beginPath();
+  // Top line: withers to croup
+  c.moveTo(32,-8);
+  c.bezierCurveTo(36,-14,32,-22,22,-22);
+  c.bezierCurveTo(8,-26,-18,-25,-32,-18);
+  c.bezierCurveTo(-42,-14,-44,-4,-40,6);
+  // Belly line
+  c.bezierCurveTo(-36,16,-20,18,-2,16);
+  c.bezierCurveTo(14,14,28,8,34,0);
+  c.closePath();c.fill();
+
+  // Body highlight (top)
+  c.fillStyle=lightB;c.globalAlpha=.12;
+  c.beginPath();c.ellipse(-2,-18,22,5,-.05,0,Math.PI*2);c.fill();
+  c.globalAlpha=1;
+
+  // Belly shadow
+  c.fillStyle='rgba(0,0,0,.1)';
+  c.beginPath();c.ellipse(-4,12,24,5,0,0,Math.PI*2);c.fill();
+
+  // === SADDLE PAD (jokey rengi) ===
+  c.fillStyle=jc;c.beginPath();
+  c.moveTo(15,-18);c.lineTo(-10,-18);c.lineTo(-18,4);c.lineTo(-8,10);
+  c.lineTo(6,8);c.lineTo(18,-6);c.closePath();c.fill();
+  c.strokeStyle=dk(jc,.5);c.lineWidth=1;c.stroke();
+
+  // Number circle
+  c.fillStyle='#fff';c.beginPath();c.arc(-3,-.5,8.5,0,Math.PI*2);c.fill();
+  c.strokeStyle=dk(jc,.6);c.lineWidth=.8;c.stroke();
+  c.fillStyle='#222';c.font='bold 10px Arial';c.textAlign='center';c.textBaseline='middle';
+  c.fillText(num,-3,.5);
+
+  // === NEAR LEGS (body color, in front) ===
+  proLeg(c,-26,12,g.br,bc);
+  proLeg(c,14,12,g.fr,bc);
+
+  // === NECK ===
+  c.save();c.translate(28,-16);c.rotate(g.nk*Math.PI/180);
+  c.fillStyle=bc;c.beginPath();
+  c.moveTo(-10,2);c.bezierCurveTo(-12,-6,-10,-24,-6,-35);
+  c.bezierCurveTo(-2,-42,8,-42,11,-35);
+  c.bezierCurveTo(14,-26,12,-4,10,2);c.closePath();c.fill();
+
+  // Neck highlight
+  c.fillStyle=lightB;c.globalAlpha=.1;
+  c.beginPath();c.ellipse(8,-18,4,14,-.1,0,Math.PI*2);c.fill();
+  c.globalAlpha=1;
+
+  // === MANE (flowing strands) ===
+  c.fillStyle=mane;
+  for(let m=0;m<9;m++){
+    const my=-2-m*4, mx=-11+Math.sin(m*.7+frame)*3;
+    c.beginPath();c.ellipse(mx,my,6,2.8,-.4,0,Math.PI*2);c.fill();
+  }
+
+  // === HEAD ===
+  c.save();c.translate(1,-38);c.rotate(.3);
+
+  // Head shape - long elegant horse head
+  c.fillStyle=bc;c.beginPath();
+  c.moveTo(-5,4);
+  c.bezierCurveTo(-7,-3,-5,-12,0,-17);
+  c.bezierCurveTo(5,-22,16,-22,22,-16);
+  c.bezierCurveTo(26,-12,26,-2,22,4);
+  c.bezierCurveTo(18,10,8,12,2,10);
+  c.bezierCurveTo(-2,8,-4,6,-5,4);
+  c.closePath();c.fill();
+
+  // Face highlight
+  c.fillStyle=lightB;c.globalAlpha=.1;
+  c.beginPath();c.ellipse(10,-12,6,8,.1,0,Math.PI*2);c.fill();
+  c.globalAlpha=1;
+
+  // Jaw shadow
+  c.fillStyle=darkB;c.globalAlpha=.3;
+  c.beginPath();c.moveTo(8,11);c.bezierCurveTo(14,10,22,4,24,0);
+  c.lineTo(24,2);c.bezierCurveTo(22,7,14,13,8,13);c.closePath();c.fill();
+  c.globalAlpha=1;
+
+  // Nostril
+  c.fillStyle='#1a0a00';c.beginPath();c.ellipse(23,-4,2.5,2,.3,0,Math.PI*2);c.fill();
+
+  // Eye
+  c.fillStyle='#fff';c.beginPath();c.ellipse(9,-11,4,3.5,.1,0,Math.PI*2);c.fill();
+  c.fillStyle='#0a0500';c.beginPath();c.ellipse(10,-11,2.5,2.8,0,0,Math.PI*2);c.fill();
+  c.fillStyle='#fff';c.beginPath();c.arc(11.5,-12,1,0,Math.PI*2);c.fill();
+
+  // Ears (alert, forward-pointing)
+  c.fillStyle=bc;
+  c.beginPath();c.moveTo(2,-16);c.lineTo(-2,-26);c.lineTo(6,-18);c.fill();
+  c.beginPath();c.moveTo(9,-17);c.lineTo(7,-28);c.lineTo(14,-19);c.fill();
+  c.fillStyle=dk(bc,.5);
+  c.beginPath();c.moveTo(3,-17);c.lineTo(0,-23);c.lineTo(5,-18);c.fill();
+  c.beginPath();c.moveTo(10,-18);c.lineTo(8,-25);c.lineTo(13,-19);c.fill();
+
+  // Bridle
+  c.strokeStyle='#2a1810';c.lineWidth=1.2;
+  c.beginPath();c.moveTo(5,-7);c.lineTo(22,-5);c.stroke(); // noseband
+  c.beginPath();c.moveTo(17,-17);c.lineTo(17,5);c.stroke(); // cheekpiece
+  c.beginPath();c.moveTo(5,-17);c.lineTo(17,-17);c.stroke(); // browband
+  c.fillStyle='#ccc';c.beginPath();c.arc(17,5,1.8,0,Math.PI*2);c.fill(); // bit
+
+  c.restore(); // head
+  c.restore(); // neck
+  c.restore(); // body bounce
+}
+
+function proLeg(c, ox, oy, angle, color){
+  const dk=(hex,f)=>{const m=hex.match(/\w\w/g).map(x=>parseInt(x,16));return`rgb(${m[0]*f|0},${m[1]*f|0},${m[2]*f|0})`};
+  c.save();c.translate(ox,oy);
+  const rad=angle*Math.PI/180;
+  const knee=Math.max(0,-angle*.4);
+  const kr=knee*Math.PI/180;
+
+  // Upper leg (muscular)
+  c.save();c.rotate(rad);
+  c.fillStyle=color;
+  c.beginPath();c.moveTo(-4,0);c.bezierCurveTo(-5,5,-4,14,-3,20);
+  c.lineTo(4,20);c.bezierCurveTo(5,14,5.5,5,4.5,0);c.closePath();c.fill();
+
+  // Knee
+  c.fillStyle=dk(color,.88);
+  c.beginPath();c.ellipse(.5,20,4,2.8,0,0,Math.PI*2);c.fill();
+
+  // Lower leg (thinner, elegant)
+  c.save();c.translate(0,20);c.rotate(kr);
+  c.fillStyle=dk(color,.9);
+  c.beginPath();c.moveTo(-2.5,0);c.lineTo(-2,18);c.lineTo(2.5,18);c.lineTo(3,0);c.closePath();c.fill();
+
+  // Fetlock
+  c.fillStyle=dk(color,.85);
+  c.beginPath();c.ellipse(.5,18,3,2,0,0,Math.PI*2);c.fill();
+
+  // Hoof (proper shape)
+  c.fillStyle='#1a1208';
+  c.beginPath();c.moveTo(-3,17);c.lineTo(-3.5,22);
+  c.quadraticCurveTo(.5,24,4.5,22);c.lineTo(4,17);c.closePath();c.fill();
+
+  // Hoof highlight
+  c.fillStyle='rgba(255,255,255,.08)';
+  c.beginPath();c.moveTo(-2,18);c.lineTo(-2.5,21);c.quadraticCurveTo(0,22,2,21);c.lineTo(1.5,18);c.closePath();c.fill();
+
+  c.restore();c.restore();c.restore();
+}
+
+function drawHorses(){
+  if(!sheetsReady) return;
+  const tt=tTop(),lh=(tBot()-tt)/CFG.count;
+  // At boyutu: serit yuksekligine orantili ama max sinirli
+  const targetH = Math.min(lh * 1.55, CELL_H * 1.8);
+  const sc = targetH / CELL_H;
+  const dw = CELL_W * sc, dh = CELL_H * sc;
+
+  horses.forEach((h,i)=>{
+    const cy = tt + i*lh + lh*0.5;
+    const sheet = colorSheets[i];
+    if(!sheet) return;
+
+    // Gallop frame -> row,col in spritesheet
+    const fr = h.frame % GALLOP_FRAMES;
+    const row = Math.floor(fr / SHEET_COLS);
+    const col = fr % SHEET_COLS;
+    const sx = col * CELL_W;
+    const sy = row * CELL_H;
+
+    // Shadow
+    cx.fillStyle='rgba(0,0,0,.2)';
+    cx.beginPath();cx.ellipse(h.x+2*sc, cy+dh*.35, dw*.4, dh*.06, 0, 0, Math.PI*2);cx.fill();
+
+    // Draw horse sprite
+    cx.drawImage(sheet, sx, sy, CELL_W, CELL_H, h.x-dw*.4, cy-dh*.4, dw, dh);
+
+    // Isim etiketi - atin govde ustunde (serit icinde kalacak)
+    const name = h.name || NAMES[i] || 'At'+(i+1);
+    const fs = Math.max(9, Math.min(11, 10*sc))|0;
+    cx.font = `700 ${fs}px Arial`;
+    cx.textAlign = 'center';cx.textBaseline = 'middle';
+    // Serit merkezinden biraz yukari - kesinlikle serit icinde
+    const nameY = Math.max(tt + 10, cy - lh*.3);
+    const nameX = h.x;
+    const tw = cx.measureText(name).width;
+    // Arka plan kutusu
+    cx.fillStyle = 'rgba(0,0,0,.6)';
+    cx.beginPath();
+    cx.roundRect(nameX - tw/2 - 5, nameY - fs/2 - 2, tw + 10, fs + 4, 3);
+    cx.fill();
+    // Isim
+    cx.fillStyle = '#fff';
+    cx.fillText(name, nameX, nameY);
+  });
+}
+
+function drawFinish(){
+  const tt=tTop(),tb=tBot(),cs=10,cols=3;
+  for(let y=tt;y<tb;y+=cs)for(let c=0;c<cols;c++){cx.fillStyle=((y-tt)/cs+c|0)%2===0?'#111':'#fff';cx.fillRect(finishX+c*cs,y,cs,cs);}
+}
+
+function drawFx(){
+  if(CFG.weather==='rainy'){cx.strokeStyle='rgba(170,190,240,.35)';cx.lineWidth=1.2;rain.forEach(r=>{cx.beginPath();cx.moveTo(r.x,r.y);cx.lineTo(r.x-2.5,r.y+r.l);cx.stroke();});}
+  if(CFG.time==='night'){cx.fillStyle='rgba(0,0,15,.3)';cx.fillRect(0,0,W,H);const tt=tTop(),tb=tBot();
+    for(let i=0;i<4;i++){const lx=W*(.2+i*.2);cx.fillStyle='#444';cx.fillRect(lx-1.5,tt-30,3,32);
+      const g=cx.createRadialGradient(lx,tt,4,lx,tt+50,70);g.addColorStop(0,'rgba(255,255,180,.12)');g.addColorStop(1,'rgba(255,255,180,0)');
+      cx.fillStyle=g;cx.beginPath();cx.moveTo(lx-4,tt);cx.lineTo(lx-50,tb);cx.lineTo(lx+50,tb);cx.lineTo(lx+4,tt);cx.fill();}}
+}
+
+function tTop(){
+  // At sayisi artinca track daha yukaridan baslar
+  if(CFG.count<=4) return H*.42;
+  if(CFG.count<=6) return H*.38;
+  if(CFG.count<=8) return H*.34;
+  return H*.30;
+}
+function tBot(){
+  // Ekranin %92'sini gecmesin
+  const maxBot = H*.92;
+  const natural = tTop() + CFG.count * laneH();
+  return Math.min(natural, maxBot);
+}
+function laneH(){
+  // Serit yuksekligi at sayisina gore
+  const available = H*.92 - tTop();
+  return available / CFG.count;
+}
+
+// =========================================================
+// RESULTS
+// =========================================================
+function showResults(){
+  hide('hud');hide('ib');show('ov-res');showEtheral();
+
+  // Online modda finished state yaz
+  if(OL.mode==='online'&&OL.isHost&&OL.roomRef){
+    OL.roomRef.update({state:'finished'});
+  }
+
+  $('r-time').textContent='Sure: '+fmt(raceTime);
+  const w=CFG.weather==='sunny'?'Gunesli':'Yagmurlu',t=CFG.time==='day'?'Gunduz':'Gece',r=CFG.track==='grass'?'Cim':'Kum';
+  const modeTag=OL.mode==='online'?' | ONLINE':'';
+  $('r-info').textContent=`${w} | ${t} | ${r} | ${CFG.duration}sn${modeTag}`;
+
+  if(OL.mode==='offline'){
+    const wo=finishOrder[0]===horses[selHorse];const odds=getOdds(horses[selHorse]?.baseSpeed||3);
+    const win=wo?Math.round(selBet*odds):0;if(wo)money+=win;
+    $('r-bet').innerHTML=wo?`<span style="color:#2ecc71;font-weight:700">KAZANDIN! +${win} TL</span>`:`<span style="color:#e74c3c">Kaybettin! -${selBet} TL</span>`;
+    $('r-money').textContent=money+' TL';
+  } else {
+    $('r-bet').innerHTML='';
+    $('r-money').textContent='';
+  }
+
+  const tb=$('r-body');tb.innerHTML='';
+  finishOrder.forEach((h,i)=>{
+    const tr=document.createElement('tr');tr.className=i===0?'g1':i===1?'g2':i===2?'g3':'';
+    const medal=i===0?'\u{1F947} ':i===1?'\u{1F948} ':i===2?'\u{1F949} ':'';
+    const idx=horses.indexOf(h);
+    const hname=h.name||NAMES[idx]||'At '+(idx+1);
+    const isMe=OL.mode==='online'&&hname===OL.playerName;
+    const you=isMe||idx===selHorse?' <span style="color:#ffd700">(Sen)</span>':'';
+    tr.innerHTML=`<td>${medal}${i+1}.</td><td><span style="color:${JOCK_C[idx]};font-weight:700">${hname}</span>${you}</td><td>${fmt(h.finishTime)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// Ilk ekrani goster
+if(OL.playerName&&localStorage.getItem('horseName')){
+  OL.loggedIn=true;goOnline();G.showLobby();
+} else {
+  hideAll();show('ov-login');
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

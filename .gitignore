@@ -1,0 +1,11 @@
+web/config.js
+node_modules/
+.DS_Store
+*.log
+.claude/
+production/session-state/
+production/session-logs/
+Assets/
+Claude-Code-Game-Studios/
+GameDev-Resources/
+awesome-claude-skills/
