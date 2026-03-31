@@ -284,7 +284,7 @@ canvas{display:block}
   <h2 id="room-code" style="color:#ffd700;font-size:20px;letter-spacing:4px">------</h2>
   <div id="room-settings-area">
     <div class="sr"><label>&#9728;&#65039; Hava</label><div class="ops" data-rk="weather"><button class="on amber" data-v="sunny">&#9728; Gunesli</button><button class="amber" data-v="rainy">&#127783; Yagmurlu</button></div></div>
-    <div class="sr"><label>&#127966; Pist</label><div class="ops" data-rk="track"><button class="on green" data-v="grass">Cim</button><button class="sand" data-v="sand">Kum</button></div></div>
+    <div class="sr"><label>&#127966; Pist</label><div class="ops" data-rk="track"><button class="on green" data-v="grass">Cim</button><button class="sand" data-v="sand">Kum</button><button class="purple" data-v="oval">Oval</button></div></div>
     <div class="sr"><label>&#9201; Sure</label><span style="color:#3b82f6;font-weight:700;font-size:14px">60 saniye</span></div>
   </div>
   <div class="menu-divider"></div>
@@ -315,7 +315,7 @@ canvas{display:block}
   <div class="menu-settings">
     <div class="sr"><label><span class="sr-icon">&#9728;&#65039;</span> Hava</label><div class="ops" data-k="weather" data-c="amber"><button class="on amber" data-v="sunny">&#9728; Gunesli</button><button class="amber" data-v="rainy">&#127783; Yagmurlu</button></div></div>
     <div class="sr"><label><span class="sr-icon">&#127761;</span> Zaman</label><div class="ops" data-k="time" data-c="amber"><button class="on amber" data-v="day">&#127774; Gunduz</button><button class="amber" data-v="night">&#127769; Gece</button></div></div>
-    <div class="sr"><label><span class="sr-icon">&#127966;</span> Pist</label><div class="ops" data-k="track" data-c="green"><button class="on green" data-v="grass">Cim</button><button class="sand" data-v="sand">Kum</button></div></div>
+    <div class="sr"><label><span class="sr-icon">&#127966;</span> Pist</label><div class="ops" data-k="track" data-c="green"><button class="on green" data-v="grass">Cim</button><button class="sand" data-v="sand">Kum</button><button class="purple" data-v="oval">Oval</button></div></div>
     <div class="sr"><label><span class="sr-icon">&#9201;</span> Sure</label><div style="display:flex;align-items:center;gap:8px"><input type="number" min="10" max="300" value="60" id="duration-input" style="width:70px;padding:6px 10px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.06);color:#3b82f6;font-size:15px;font-weight:700;text-align:center;outline:none" oninput="CFG.duration=Math.max(10,Math.min(300,+this.value||60))"><span style="color:#6a7a8a;font-size:13px">saniye</span></div></div>
     <div class="sr"><label><span class="sr-icon">&#127943;</span> At Sayisi</label><div style="display:flex;align-items:center;gap:10px"><input type="range" min="2" max="10" value="6" id="horse-count-slider" style="width:120px;accent-color:#8b5cf6" oninput="CFG.count=+this.value;document.getElementById('horse-count-val').textContent=this.value"><span id="horse-count-val" style="color:#8b5cf6;font-weight:700;font-size:16px;min-width:22px;text-align:center">6</span></div></div>
   </div>
@@ -1093,7 +1093,7 @@ G.showBet=()=>{hideAll();show('ov-bet');selHorse=-1;selBet=0;
   initRace(false);buildHL();buildBR();};
 G.go=()=>{if(selHorse<0||selBet<=0)return;playerNames=readNameInputs();money-=selBet;hideAll();show('hud');
   $('timer').textContent='00:00:00';show('ib');
-  const w=CFG.weather==='sunny'?'Gunesli':'Yagmurlu',t=CFG.time==='day'?'Gunduz':'Gece',r=CFG.track==='grass'?'Cim':'Kum';
+  const w=CFG.weather==='sunny'?'Gunesli':'Yagmurlu',t=CFG.time==='day'?'Gunduz':'Gece',r=CFG.track==='grass'?'Cim':(CFG.track==='oval'?'Oval':'Kum');
   $('ib').innerHTML=`${w} | ${t} | ${r} Pist<br>${CFG.duration}sn | ${CFG.count} At`;
   hideEtheral();raceState='countdown';countdownTime=3;finishOrder=[];show('cd');$('cd').textContent='3';};
 G.replay=()=>{
@@ -1164,14 +1164,31 @@ function shuffleColors(){
     var tmp=colorOrder[i];colorOrder[i]=colorOrder[j];colorOrder[j]=tmp;
   }
 }
+// Oval pist parametreleri
+var ovalCX,ovalCY,ovalRX,ovalRY;
+function calcOvalParams(){
+  var pad=60;
+  ovalCX=W/2;ovalCY=H/2;
+  ovalRX=W/2-pad;ovalRY=H/2-pad-20;
+}
+function getOvalPos(angle,laneOffset){
+  // angle: 0=start(alt), saat yonunde, 2PI=finish
+  var a=-Math.PI/2+angle; // ustten basla
+  var rx=ovalRX-laneOffset;
+  var ry=ovalRY-laneOffset;
+  return {x:ovalCX+Math.cos(a)*rx, y:ovalCY+Math.sin(a)*ry, a:a};
+}
+
 function initRace(seeded){
   horses=[];finishOrder=[];raceTime=0;camX=0;shuffleColors();
-  const R=seeded?sRand:Math.random; // deterministik veya normal random
-  const sm=CFG.track==='grass'?(CFG.weather==='sunny'?1:.9):(CFG.weather==='sunny'?.85:.75);
+  calcOvalParams();
+  const R=seeded?sRand:Math.random;
+  const sm=CFG.track==='grass'?(CFG.weather==='sunny'?1:.9):(CFG.track==='sand'?(CFG.weather==='sunny'?.85:.75):1);
   finishX=Math.max(W*.88, 800);
   if(playerNames.length<CFG.count) playerNames=NAMES.slice(0,CFG.count);
   for(let i=0;i<CFG.count;i++){const bs=2.8+R()*0.8;
     horses.push({baseSpeed:bs,currentSpeed:0,targetSpeed:bs,speedMult:sm,x:90,lane:i,
+      angle:0, // oval icin: 0=start, 2PI=finish
       name:playerNames[i]||NAMES[i],
       finished:false,finishTime:0,finishPos:0,animTime:R()*10,frame:0,
       stamina:.7+R()*.6,accel:.5+R()*1,
@@ -1217,7 +1234,7 @@ function update(dt){
     horses.forEach(h=>{ if(!h.finished && h.x > leaderX) leaderX = h.x; });
 
     horses.forEach(h=>{if(h.finished)return;
-      const prog=(h.x-90)/dist;
+      const prog=CFG.track==='oval'?(h.angle/(Math.PI*2)):((h.x-90)/dist);
 
       // === STRATEJI (hafif etki) ===
       let sm=1;
@@ -1274,12 +1291,21 @@ function update(dt){
       // === TOPLAM HIZ ===
       const fs=h.currentSpeed*sm*bm*stm*fm*sa*sp*h.drafting*luckMod;
       h.x+=rate*(fs/avg)*h.speedMult*dt;
+      // Oval icin angle guncelle
+      if(CFG.track==='oval'){
+        var angleRate=(Math.PI*2)/CFG.duration;
+        h.angle+=angleRate*(fs/avg)*h.speedMult*dt;
+      }
       h.animTime+=dt*Math.max(fs/avg,.3)*8;
       h.frame=Math.floor(h.animTime)%GALLOP_FRAMES;
-      if(h.x>=finishX){h.finished=true;h.finishTime=raceTime;finishOrder.push(h);h.finishPos=finishOrder.length;}
+      var isFinished=CFG.track==='oval'?(h.angle>=Math.PI*2):(h.x>=finishX);
+      if(isFinished&&!h.finished){h.finished=true;h.finishTime=raceTime;finishOrder.push(h);h.finishPos=finishOrder.length;}
     });
     if(finishOrder.length>=horses.length){raceState='finished';setTimeout(showPodium,700);}
 
+    // Oval modda kamera sabit
+    if(CFG.track==='oval'){camX=0;}
+    else{
     // Kamera: grubu takip et, mumkun oldugunca genis goster
     let maxX=0,minX=999999;
     horses.forEach(h=>{if(!h.finished){if(h.x>maxX)maxX=h.x;if(h.x<minX)minX=h.x;}});
@@ -1287,6 +1313,7 @@ function update(dt){
     var groupCenter=(maxX+minX)/2;
     var targetCam=Math.max(0,Math.min(groupCenter-W*0.4, maxX-W*0.25));
     camX+=(targetCam-camX)*0.06; // smooth follow
+    }
 
     // Spiker text
     var prog=(maxX-90)/(finishX-90);
@@ -1299,7 +1326,16 @@ function fmt(t){const m=t/60|0,s=t%60|0,c=(t*100)%100|0;return`${(m+'').padStart
 // =========================================================
 // DRAW
 // =========================================================
-function draw(){if(raceState!=='countdown'&&raceState!=='racing')return;cx.clearRect(0,0,W,H);drawBg();cx.save();cx.translate(-camX,0);drawTrack();drawHorses();drawFinish();cx.restore();drawFx();}
+function draw(){
+  if(raceState!=='countdown'&&raceState!=='racing')return;
+  cx.clearRect(0,0,W,H);
+  if(CFG.track==='oval'){
+    drawOvalBg();drawOvalTrack();drawOvalHorses();drawOvalFinish();
+  } else {
+    drawBg();cx.save();cx.translate(-camX,0);drawTrack();drawHorses();drawFinish();cx.restore();
+  }
+  drawFx();
+}
 
 function drawBg(){
   let g;
@@ -1641,6 +1677,106 @@ function drawHorses(){
 function drawFinish(){
   const tt=tTop(),tb=tBot(),cs=10,cols=3;
   for(let y=tt;y<tb;y+=cs)for(let c=0;c<cols;c++){cx.fillStyle=((y-tt)/cs+c|0)%2===0?'#111':'#fff';cx.fillRect(finishX+c*cs,y,cs,cs);}
+}
+
+// =========================================================
+// OVAL PIST DRAW
+// =========================================================
+function drawOvalBg(){
+  // Yesil zemin
+  cx.fillStyle=CFG.weather==='rainy'?'#2a4a2a':'#3a7a3a';
+  cx.fillRect(0,0,W,H);
+  // Gokyuzu ust %30
+  var g=cx.createLinearGradient(0,0,0,H*.3);
+  if(CFG.time==='night'){g.addColorStop(0,'#080818');g.addColorStop(1,'#141430');}
+  else if(CFG.weather==='rainy'){g.addColorStop(0,'#4a5568');g.addColorStop(1,'#718096');}
+  else{g.addColorStop(0,'#6BB5E0');g.addColorStop(1,'#A8D8EA');}
+  cx.fillStyle=g;cx.fillRect(0,0,W,H*.3);
+}
+
+function drawOvalTrack(){
+  calcOvalParams();
+  var laneW=Math.min(25, 180/CFG.count);
+  var totalW=laneW*CFG.count;
+  // Dis kenar
+  cx.strokeStyle='#fff';cx.lineWidth=2;
+  cx.beginPath();cx.ellipse(ovalCX,ovalCY,ovalRX+5,ovalRY+5,0,0,Math.PI*2);cx.stroke();
+  // Seritler
+  for(var i=0;i<=CFG.count;i++){
+    var offset=i*laneW;
+    cx.strokeStyle=i===0||i===CFG.count?'rgba(255,255,255,.6)':'rgba(255,255,255,.15)';
+    cx.lineWidth=i===0||i===CFG.count?2:1;
+    cx.beginPath();cx.ellipse(ovalCX,ovalCY,ovalRX-offset,ovalRY-offset,0,0,Math.PI*2);cx.stroke();
+  }
+  // Pist zemini
+  for(var i=0;i<CFG.count;i++){
+    var r1x=ovalRX-i*laneW,r1y=ovalRY-i*laneW;
+    var r2x=ovalRX-(i+1)*laneW,r2y=ovalRY-(i+1)*laneW;
+    cx.fillStyle=i%2===0?'rgba(139,115,85,.3)':'rgba(160,130,90,.25)';
+    cx.beginPath();cx.ellipse(ovalCX,ovalCY,r1x,r1y,0,0,Math.PI*2);
+    cx.ellipse(ovalCX,ovalCY,r2x,r2y,0,Math.PI*2,0);cx.fill('evenodd');
+  }
+  // Start/Finish cizgisi (ust)
+  var sfPos=getOvalPos(0,0);
+  var sfPos2=getOvalPos(0,totalW);
+  cx.strokeStyle='#fff';cx.lineWidth=3;
+  cx.beginPath();cx.moveTo(sfPos.x,sfPos.y);cx.lineTo(sfPos2.x,sfPos2.y);cx.stroke();
+  // Bayrakcik
+  cx.fillStyle='#ffd700';cx.font='bold 14px sans-serif';cx.textAlign='center';
+  cx.fillText('START/FINISH',ovalCX,ovalCY-ovalRY-12);
+}
+
+function drawOvalHorses(){
+  if(!sheetsReady) return;
+  var laneW=Math.min(25, 180/CFG.count);
+  var sc=Math.min(laneW*1.2/CELL_H*4, 0.5);
+  var dw=CELL_W*sc, dh=CELL_H*sc;
+  horses.forEach(function(h,i){
+    var offset=(i+0.5)*laneW;
+    var pos=getOvalPos(Math.min(h.angle,Math.PI*2),offset);
+    var sheet=colorSheets[colorOrder[i%10]];
+    if(!sheet)return;
+    var fr=h.frame%GALLOP_FRAMES;
+    var row=Math.floor(fr/SHEET_COLS);
+    var col=fr%SHEET_COLS;
+    var sx=col*CELL_W,sy=row*CELL_H;
+    // Golge
+    cx.fillStyle='rgba(0,0,0,.15)';
+    cx.beginPath();cx.ellipse(pos.x,pos.y+dh*.2,dw*.3,dh*.05,0,0,Math.PI*2);cx.fill();
+    // At sprite - yonu angle'a gore dondur
+    cx.save();
+    cx.translate(pos.x,pos.y);
+    cx.rotate(pos.a+Math.PI/2);
+    cx.drawImage(sheet,sx,sy,CELL_W,CELL_H,-dw/2,-dh/2,dw,dh);
+    cx.restore();
+    // Isim
+    var name=h.name||'At'+(i+1);
+    cx.font='bold 9px Arial';cx.textAlign='center';
+    cx.fillStyle='rgba(0,0,0,.6)';
+    var tw=cx.measureText(name).width;
+    cx.fillRect(pos.x-tw/2-3,pos.y-dh*.5-8,tw+6,12);
+    cx.fillStyle='#fff';cx.fillText(name,pos.x,pos.y-dh*.5);
+    // Siralama numarasi
+    if(h.finished){
+      cx.fillStyle='#ffd700';cx.font='bold 11px Arial';
+      cx.fillText(h.finishPos+'.',pos.x,pos.y+dh*.4);
+    }
+  });
+}
+
+function drawOvalFinish(){
+  // Start/finish cizgisi animasyonu - damalı bayrak
+  var laneW=Math.min(25, 180/CFG.count);
+  var totalW=laneW*CFG.count;
+  var cs=5;
+  for(var d=0;d<totalW;d+=cs){
+    var pos1=getOvalPos(0,d);
+    var pos2=getOvalPos(0,d+cs);
+    cx.fillStyle=Math.floor(d/cs)%2===0?'#111':'#fff';
+    cx.globalAlpha=0.7;
+    cx.fillRect(pos1.x-cs/2,pos1.y-1,cs,3);
+    cx.globalAlpha=1;
+  }
 }
 
 function drawFx(){
