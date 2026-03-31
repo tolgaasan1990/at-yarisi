@@ -243,6 +243,7 @@ canvas{display:block}
     <button class="ab bs" id="ready-btn" onclick="G.toggleReady()">&#9989; HAZIRIM</button>
     <button class="ab bm" onclick="G.leaveRoom()">&#128682; Cik</button>
   </div>
+  <button class="ab bs menu-go" id="start-race-btn" style="display:none;margin-top:10px;background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="G.startOnlineRace()">&#127937; YARISI BASLAT</button>
   <div id="room-status" style="color:#ffd700;font-size:14px;margin-top:8px"></div>
 </div></div>
 
@@ -819,14 +820,14 @@ function listenRoom(code){
     OL.roomData=data;
     updateRoomUI(data,code);
 
-    // Otomatik baslama: min 2 kisi + herkes hazir
+    // Host baslatma yetkisi: herkes hazir olunca buton aktif olur
     if(data.state==='waiting'){
       const players=data.players?Object.values(data.players):[];
-      if(players.length>=2 && players.every(p=>p.ready)){
-        if(OL.isHost){
-          // Host countdown baslatir
-          ref.update({state:'countdown',seed:Math.random()*2147483647|0});
-        }
+      const allReady=players.length>=2 && players.every(p=>p.ready);
+      const startBtn=$('start-race-btn');
+      if(startBtn){
+        if(OL.isHost&&allReady){startBtn.style.display='';startBtn.disabled=false;}
+        else{startBtn.style.display='none';}
       }
     }
 
@@ -890,7 +891,7 @@ function updateRoomUI(data,code){
   // Status
   if(data.state==='waiting'){
     const allReady=players.length>=2&&players.every(p=>p.ready);
-    $('room-status').textContent=players.length<2?'En az 2 oyuncu gerekli...':allReady?'Yaris basliyor!':'Oyuncularin hazir olmasini bekle...';
+    $('room-status').textContent=players.length<2?'En az 2 oyuncu gerekli...':allReady?(OL.isHost?'Herkes hazir! Yarisi baslat.':'Herkes hazir! Host baslatmayi bekliyor...'):'Oyuncularin hazir olmasini bekle...';
   } else if(data.state==='countdown'){
     $('room-status').textContent='Geri sayim!';
   }
@@ -924,6 +925,10 @@ G.toggleReady=()=>{
   if(!OL.roomRef||!OL.roomData)return;
   const cur=OL.roomData.players?.[OL.playerName]?.ready||false;
   db.ref('rooms/'+OL.roomCode+'/players/'+OL.playerName+'/ready').set(!cur);
+};
+G.startOnlineRace=()=>{
+  if(!OL.isHost||!OL.roomRef)return;
+  OL.roomRef.update({state:'countdown',seed:Math.random()*2147483647|0});
 };
 
 G.leaveRoom=()=>{
