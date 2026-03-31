@@ -383,11 +383,21 @@ const SPRITE_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAABCCAYAAA
 const SHEET_COLS = 4, CELL_W = 128, CELL_H = 128, GALLOP_FRAMES = 11;
 const CFG={weather:'sunny',time:'day',track:'grass',duration:60,count:6};
 const NAMES=['Yildirim','Kasirga','Ruzgar','Sahin','Bora','Alev','Tornado','Simsek','Bulut','Kartal'];
-const JOCK_C=['#E63946','#FF69B4','#7C3AED','#F59E0B','#2563EB','#16A34A','#EA580C','#0891B2','#94A3B8','#9333EA'];
-const BODY_C=['#6B3A2E','#C8A87C','#F0EAE0','#8B5E3C','#1E1410','#B87C3C','#4A2A1A','#D4C4B0','#2E2218','#A06030'];
-// Hue shifts for vivid distinct horse colors (degrees)
-// 0=kahve(orijinal), 40=altin, 180=mavi, 90=yesil, 270=mor, 320=pembe, 140=turkuaz, 210=lacivert, 350=kirmizi, 60=sari
-const HUE_SHIFTS=[0,40,180,90,270,320,140,210,350,60];
+const JOCK_C=['#E63946','#2563EB','#16A34A','#F59E0B','#7C3AED','#FF69B4','#EA580C','#0891B2','#94A3B8','#9333EA'];
+const BODY_C=['#5C3317','#C8923C','#D8CFC4','#1A1A1A','#8B4513','#E8C872','#8898A8','#A0522D','#4A4A52','#B8593B'];
+// Dogal at renkleri: Koyu Doru, Altin Doru, Kir, Siyah, Kestane, Palomino, Alaca Gri, Kumral, Demir Kir, Kizilagac
+const HORSE_TINTS=[
+  [0.36,0.20,0.09], // Koyu Doru
+  [0.78,0.57,0.24], // Altin Doru
+  [0.85,0.81,0.77], // Kir
+  [0.10,0.10,0.10], // Siyah
+  [0.55,0.27,0.07], // Kestane
+  [0.91,0.78,0.45], // Palomino
+  [0.53,0.60,0.66], // Alaca Gri
+  [0.63,0.32,0.18], // Kumral
+  [0.29,0.29,0.32], // Demir Kir
+  [0.72,0.35,0.23], // Kizilagac
+];
 const BETS=[50,100,200,500];
 const cv=document.getElementById('c'),cx=cv.getContext('2d');
 let W,H;
@@ -412,18 +422,20 @@ baseSheet.onload = function(){
     const octx = oc.getContext('2d');
     octx.drawImage(baseSheet, 0, 0);
 
-    // Stronger hue shift + saturation boost for vivid colors
+    // Tint-based recolor: luminance korunur, hedef renkle carpilir
     const imgData = octx.getImageData(0, 0, oc.width, oc.height);
     const d = imgData.data;
+    const tint = HORSE_TINTS[i];
     for(let p=0; p<d.length; p+=4){
       if(d[p+3]<10) continue;
-      const [h,s,l]=rgbToHsl(d[p],d[p+1],d[p+2]);
-      // Even index 0 gets slight saturation boost
-      const newH = (h+HUE_SHIFTS[i]/360)%1;
-      const newS = Math.min(s*2.2+0.2, 1);
-      const newL = Math.max(0.08, Math.min(l*0.9+0.05, 0.85));
-      const [nr,ng,nb]=hslToRgb(newH, newS, newL);
-      d[p]=nr; d[p+1]=ng; d[p+2]=nb;
+      // Luminance hesapla (0-1)
+      const lum = (d[p]*0.299 + d[p+1]*0.587 + d[p+2]*0.114) / 255;
+      // Kontrasti biraz artir
+      const c = Math.pow(lum, 0.85);
+      // Hedef renk * luminance
+      d[p]   = Math.min(255, Math.round(tint[0] * c * 320));
+      d[p+1] = Math.min(255, Math.round(tint[1] * c * 320));
+      d[p+2] = Math.min(255, Math.round(tint[2] * c * 320));
     }
     octx.putImageData(imgData, 0, 0);
 
@@ -500,7 +512,8 @@ G.login=()=>{
 G.logout=()=>{goOffline();stopListenOnlineCount();OL.loggedIn=false;OL.playerName='';localStorage.removeItem('horseName');hideAll();show('ov-login');};
 
 // === LOBBY ===
-G.showLobby=()=>{hideAll();show('ov-lobby');$('lobby-welcome').textContent='Hosgeldin, '+OL.playerName+'!';listenOnlineCount();};
+function clearCanvas(){cx.fillStyle='#0a0a1a';cx.fillRect(0,0,W,H);}
+G.showLobby=()=>{hideAll();clearCanvas();show('ov-lobby');$('lobby-welcome').textContent='Hosgeldin, '+OL.playerName+'!';listenOnlineCount();};
 
 // === ONLINE ===
 G.createOnlineRoom=()=>{
@@ -687,7 +700,7 @@ document.querySelectorAll('[data-rk]').forEach(g=>{
 // === OFFLINE (TEK OYUNCU) ===
 let playerNames=[]; // online: oyuncu isimleri, offline: at isimleri
 
-G.showMenu=()=>{hideAll();show('ov-menu');OL.mode='offline';raceState='idle';playerNames=[];};
+G.showMenu=()=>{hideAll();clearCanvas();show('ov-menu');OL.mode='offline';raceState='idle';playerNames=[];};
 G.showBet=()=>{hideAll();show('ov-bet');selHorse=-1;selBet=0;
   $('mny').textContent=money+' TL';$('gobtn').disabled=true;$('si').textContent='At ve bahis miktari sec';
   // Isim inputlarini olustur
