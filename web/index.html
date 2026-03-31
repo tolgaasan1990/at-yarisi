@@ -35,6 +35,7 @@ canvas{display:block}
 .sr .ops button{padding:6px 16px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.04);color:#6a7a8a;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s;backdrop-filter:blur(4px)}
 .sr .ops button.on{background:linear-gradient(135deg,#e94560,#d63051);color:#fff;border-color:rgba(233,69,96,.3);box-shadow:0 4px 15px rgba(233,69,96,.25),inset 0 1px 0 rgba(255,255,255,.15)}
 .sr .ops button.on.green{background:linear-gradient(135deg,#22c55e,#16a34a);border-color:rgba(34,197,94,.3);box-shadow:0 4px 15px rgba(34,197,94,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+.sr .ops button.on.sand{background:linear-gradient(135deg,#c4a265,#a08050);border-color:rgba(196,162,101,.3);box-shadow:0 4px 15px rgba(196,162,101,.25),inset 0 1px 0 rgba(255,255,255,.15)}
 .sr .ops button.on.amber{background:linear-gradient(135deg,#f59e0b,#d97706);border-color:rgba(245,158,11,.3);box-shadow:0 4px 15px rgba(245,158,11,.25),inset 0 1px 0 rgba(255,255,255,.15)}
 .sr .ops button.on.blue{background:linear-gradient(135deg,#3b82f6,#2563eb);border-color:rgba(59,130,246,.3);box-shadow:0 4px 15px rgba(59,130,246,.25),inset 0 1px 0 rgba(255,255,255,.15)}
 .sr .ops button.on.purple{background:linear-gradient(135deg,#8b5cf6,#7c3aed);border-color:rgba(139,92,246,.3);box-shadow:0 4px 15px rgba(139,92,246,.25),inset 0 1px 0 rgba(255,255,255,.15)}
@@ -231,7 +232,7 @@ canvas{display:block}
   <h2 id="room-code" style="color:#ffd700;font-size:20px;letter-spacing:4px">------</h2>
   <div id="room-settings-area">
     <div class="sr"><label>&#9728;&#65039; Hava</label><div class="ops" data-rk="weather"><button class="on amber" data-v="sunny">&#9728; Gunesli</button><button class="amber" data-v="rainy">&#127783; Yagmurlu</button></div></div>
-    <div class="sr"><label>&#127966; Pist</label><div class="ops" data-rk="track"><button class="on green" data-v="grass">&#127807; Cim</button><button class="green" data-v="sand">&#127958; Kum</button></div></div>
+    <div class="sr"><label>&#127966; Pist</label><div class="ops" data-rk="track"><button class="on green" data-v="grass">Cim</button><button class="sand" data-v="sand">Kum</button></div></div>
     <div class="sr"><label>&#9201; Sure</label><span style="color:#3b82f6;font-weight:700;font-size:14px">60 saniye</span></div>
   </div>
   <div class="menu-divider"></div>
@@ -254,7 +255,7 @@ canvas{display:block}
   <div class="menu-settings">
     <div class="sr"><label><span class="sr-icon">&#9728;&#65039;</span> Hava</label><div class="ops" data-k="weather" data-c="amber"><button class="on amber" data-v="sunny">&#9728; Gunesli</button><button class="amber" data-v="rainy">&#127783; Yagmurlu</button></div></div>
     <div class="sr"><label><span class="sr-icon">&#127761;</span> Zaman</label><div class="ops" data-k="time" data-c="amber"><button class="on amber" data-v="day">&#127774; Gunduz</button><button class="amber" data-v="night">&#127769; Gece</button></div></div>
-    <div class="sr"><label><span class="sr-icon">&#127966;</span> Pist</label><div class="ops" data-k="track" data-c="green"><button class="on green" data-v="grass">&#127807; Cim</button><button class="green" data-v="sand">&#127958; Kum</button></div></div>
+    <div class="sr"><label><span class="sr-icon">&#127966;</span> Pist</label><div class="ops" data-k="track" data-c="green"><button class="on green" data-v="grass">Cim</button><button class="sand" data-v="sand">Kum</button></div></div>
     <div class="sr"><label><span class="sr-icon">&#9201;</span> Sure</label><div style="display:flex;align-items:center;gap:8px"><input type="number" min="10" max="300" value="60" id="duration-input" style="width:70px;padding:6px 10px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.06);color:#3b82f6;font-size:15px;font-weight:700;text-align:center;outline:none" oninput="CFG.duration=Math.max(10,Math.min(300,+this.value||60))"><span style="color:#6a7a8a;font-size:13px">saniye</span></div></div>
     <div class="sr"><label><span class="sr-icon">&#127943;</span> At Sayisi</label><div style="display:flex;align-items:center;gap:10px"><input type="range" min="2" max="10" value="6" id="horse-count-slider" style="width:120px;accent-color:#8b5cf6" oninput="CFG.count=+this.value;document.getElementById('horse-count-val').textContent=this.value"><span id="horse-count-val" style="color:#8b5cf6;font-weight:700;font-size:16px;min-width:22px;text-align:center">6</span></div></div>
   </div>
