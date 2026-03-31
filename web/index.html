@@ -12,21 +12,10 @@
 body{background:#0a0a1a;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;user-select:none}
 canvas{display:block}
 .ov{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:10;overflow-y:auto;padding:20px 0}
-.etheral-wrap{position:fixed;inset:0;pointer-events:none;z-index:9;overflow:hidden}
-.etheral-shadow-layer{position:absolute;inset:0;filter:url(#etheral-filter) blur(3px);opacity:.18}
-.etheral-shadow-color{width:100%;height:100%;background:rgba(80,60,40,1);mask-image:url('https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png');-webkit-mask-image:url('https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png');mask-size:cover;-webkit-mask-size:cover;mask-repeat:no-repeat;-webkit-mask-repeat:no-repeat;mask-position:center;-webkit-mask-position:center}
-.etheral-orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.12}
-.etheral-orb-1{width:500px;height:500px;background:#e94560;top:-10%;right:-5%;animation:orb1 12s ease-in-out infinite alternate}
-.etheral-orb-2{width:450px;height:450px;background:#ffd700;bottom:-8%;left:-5%;animation:orb2 15s ease-in-out infinite alternate}
-.etheral-orb-3{width:400px;height:400px;background:#3b82f6;top:40%;left:45%;animation:orb3 18s ease-in-out infinite alternate}
-.etheral-orb-4{width:350px;height:350px;background:#8b5cf6;top:10%;left:20%;animation:orb4 14s ease-in-out infinite alternate}
-.etheral-orb-5{width:300px;height:300px;background:#22c55e;bottom:15%;right:15%;animation:orb5 16s ease-in-out infinite alternate}
-@keyframes orb1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-60px,40px) scale(1.15)}100%{transform:translate(30px,-20px) scale(.9)}}
-@keyframes orb2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(50px,-30px) scale(1.1)}100%{transform:translate(-40px,50px) scale(.95)}}
-@keyframes orb3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-40px,-50px) scale(1.2)}100%{transform:translate(60px,30px) scale(.85)}}
-@keyframes orb4{0%{transform:translate(0,0) scale(.9)}50%{transform:translate(70px,40px) scale(1.1)}100%{transform:translate(-30px,-60px) scale(1)}}
-@keyframes orb5{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-50px,60px) scale(1.15)}100%{transform:translate(40px,-40px) scale(.9)}}
-.etheral-noise{position:fixed;inset:0;background-image:url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E');background-size:150px;opacity:.04;pointer-events:none;z-index:9}
+.etheral-wrap{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:9;width:100%;height:100%}
+.etheral-distort{position:absolute;inset:-100px;filter:url(#etheral-filter) blur(4px)}
+.etheral-mask{width:100%;height:100%;background-color:rgba(128,128,128,1);mask-image:url('https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png');-webkit-mask-image:url('https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png');mask-size:cover;-webkit-mask-size:cover;mask-repeat:no-repeat;-webkit-mask-repeat:no-repeat;mask-position:center;-webkit-mask-position:center}
+.etheral-noise{position:fixed;inset:0;background-image:url('https://framerusercontent.com/images/g0QcWrxr87K0ufOxIUFBakwYA8.png');background-size:240px;background-repeat:repeat;opacity:.5;pointer-events:none;z-index:9}
 .ov.h{opacity:0;pointer-events:none;transition:opacity .4s}
 .pn{background:linear-gradient(160deg,#0c1929 0%,#162544 50%,#1a2d52 100%);border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:36px 48px;color:#fff;text-align:center;min-width:0;width:90vw;max-width:620px;box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.05);position:relative;overflow:hidden}
 @media(max-width:600px){.pn{padding:24px 20px;border-radius:18px;width:94vw}.lobby-cards{flex-direction:column}.lobby-card{padding:14px 12px}.lobby-pn{padding:28px 20px 20px!important;min-width:0!important}}
@@ -145,29 +134,20 @@ canvas{display:block}
 </head>
 <body>
 <canvas id="c"></canvas>
-<!-- Etheral Shadow SVG Filter (fullscreen) -->
+<!-- Etheral Shadow (vanilla port of React component: scale=100, speed=90, noise opacity=1 scale=1.2) -->
 <svg style="position:absolute;width:0;height:0">
 <defs>
-<filter id="etheral-filter" x="-10%" y="-10%" width="120%" height="120%">
-  <feTurbulence result="undulation" numOctaves="2" baseFrequency="0.0005,0.003" seed="0" type="turbulence"/>
-  <feColorMatrix id="etheral-hue" in="undulation" type="hueRotate" values="0"/>
+<filter id="etheral-filter">
+  <feTurbulence result="undulation" numOctaves="2" baseFrequency="0.0005,0.002" seed="0" type="turbulence"/>
+  <feColorMatrix id="etheral-hue" in="undulation" type="hueRotate" values="180"/>
   <feColorMatrix in="dist" result="circulation" type="matrix" values="4 0 0 0 1  4 0 0 0 1  4 0 0 0 1  1 0 0 0 0"/>
-  <feDisplacementMap in="SourceGraphic" in2="circulation" scale="30" result="dist"/>
-  <feDisplacementMap in="dist" in2="undulation" scale="30" result="output"/>
+  <feDisplacementMap in="SourceGraphic" in2="circulation" scale="100" result="dist"/>
+  <feDisplacementMap in="dist" in2="undulation" scale="100" result="output"/>
 </filter>
 </defs>
 </svg>
 <div class="etheral-wrap" id="etheral-wrap">
-  <!-- SVG turbulence shadow layer -->
-  <div class="etheral-shadow-layer">
-    <div class="etheral-shadow-color"></div>
-  </div>
-  <!-- Orb glow layer -->
-  <div class="etheral-orb etheral-orb-1"></div>
-  <div class="etheral-orb etheral-orb-2"></div>
-  <div class="etheral-orb etheral-orb-3"></div>
-  <div class="etheral-orb etheral-orb-4"></div>
-  <div class="etheral-orb etheral-orb-5"></div>
+  <div class="etheral-distort"><div class="etheral-mask"></div></div>
 </div>
 <div class="etheral-noise" id="etheral-noise"></div>
 <div id="ib" class="h"></div>
@@ -323,14 +303,24 @@ try {
 } catch(e) { console.warn('Firebase init failed:', e.message); }
 
 // =========================================================
-// ETHERAL SHADOW HUE ANIMATION
+// ETHERAL SHADOW HUE ANIMATION (port of framer-motion animate)
+// speed=90 -> duration=mapRange(90,1,100,1000,50)/25 = ~3.45s per 360deg
 // =========================================================
 (function(){
-  var hueEl=document.getElementById('etheral-hue');
-  if(!hueEl)return;
-  var hue=0;
-  function tick(){hue=(hue+0.6)%360;hueEl.setAttribute('values',String(hue));requestAnimationFrame(tick);}
-  tick();
+  var hueEl=document.getElementById('etheral-filter');
+  if(!hueEl) return;
+  var hueMatrix=document.getElementById('etheral-hue');
+  if(!hueMatrix) return;
+  var start=null;
+  var cycleDuration=3454; // ms per 360deg rotation
+  function tick(ts){
+    if(!start) start=ts;
+    var elapsed=(ts-start)%cycleDuration;
+    var hue=(elapsed/cycleDuration)*360;
+    hueMatrix.setAttribute('values',String(hue));
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 })();
 
 // =========================================================
