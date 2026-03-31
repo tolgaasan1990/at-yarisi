@@ -1222,11 +1222,10 @@ function drawFx(){
 }
 
 function tTop(){
-  // At sayisi artinca track daha yukaridan baslar
-  if(CFG.count<=4) return H*.42;
-  if(CFG.count<=6) return H*.38;
-  if(CFG.count<=8) return H*.34;
-  return H*.30;
+  // Az atta pistin ortada kalmasini sagla
+  var trackH = Math.min((H*.92 - H*.30), CFG.count * 180);
+  var center = (H - trackH) / 2;
+  return Math.max(center, H*.28);
 }
 function tBot(){
   // Ekranin %92'sini gecmesin
@@ -1235,9 +1234,9 @@ function tBot(){
   return Math.min(natural, maxBot);
 }
 function laneH(){
-  // Serit yuksekligi at sayisina gore
+  // Serit yuksekligi at sayisina gore, max 180px
   const available = H*.92 - tTop();
-  return available / CFG.count;
+  return Math.min(available / CFG.count, 180);
 }
 
 // =========================================================
