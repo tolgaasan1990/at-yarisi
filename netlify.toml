@@ -1,6 +1,6 @@
 [build]
   publish = "web"
-  command = "bash build.sh"
+  command = "echo 'Static site'"
 
 [[redirects]]
   from = "/*"
