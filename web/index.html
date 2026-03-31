@@ -1204,7 +1204,7 @@ function initRace(seeded){
   horses=[];finishOrder=[];raceTime=0;camX=0;shuffleColors();
   calcOvalParams();
   const R=seeded?sRand:Math.random;
-  const sm=CFG.track==='grass'?(CFG.weather==='sunny'?1:.9):(CFG.track==='sand'?(CFG.weather==='sunny'?.85:.75):1);
+  const sm=CFG.track==='grass'?(CFG.weather==='sunny'?1:.9):(CFG.weather==='sunny'?.85:.75);
   finishX=Math.max(W*.88, 800);
   if(playerNames.length<CFG.count) playerNames=NAMES.slice(0,CFG.count);
   for(let i=0;i<CFG.count;i++){const bs=2.8+R()*0.8;
@@ -1256,7 +1256,7 @@ function update(dt){
     horses.forEach(h=>{ if(!h.finished && h.x > leaderX) leaderX = h.x; });
 
     horses.forEach(h=>{if(h.finished)return;
-      const prog=CFG.track==='oval'?(h.angle/(Math.PI*2)):((h.x-90)/dist);
+      const prog=(h.x-90)/dist;
 
       // === STRATEJI (hafif etki) ===
       let sm=1;
@@ -1313,21 +1313,12 @@ function update(dt){
       // === TOPLAM HIZ ===
       const fs=h.currentSpeed*sm*bm*stm*fm*sa*sp*h.drafting*luckMod;
       h.x+=rate*(fs/avg)*h.speedMult*dt;
-      // Oval icin angle guncelle
-      if(CFG.track==='oval'){
-        var angleRate=(Math.PI*2)/CFG.duration;
-        h.angle+=angleRate*(fs/avg)*h.speedMult*dt;
-      }
       h.animTime+=dt*Math.max(fs/avg,.3)*8;
       h.frame=Math.floor(h.animTime)%GALLOP_FRAMES;
-      var isFinished=CFG.track==='oval'?(h.angle>=Math.PI*2):(h.x>=finishX);
-      if(isFinished&&!h.finished){h.finished=true;h.finishTime=raceTime;finishOrder.push(h);h.finishPos=finishOrder.length;}
+      if(h.x>=finishX){h.finished=true;h.finishTime=raceTime;finishOrder.push(h);h.finishPos=finishOrder.length;}
     });
     if(finishOrder.length>=horses.length){raceState='finished';setTimeout(showPodium,700);}
 
-    // Oval modda kamera sabit
-    if(CFG.track==='oval'){camX=0;}
-    else{
     // Kamera: grubu takip et, mumkun oldugunca genis goster
     let maxX=0,minX=999999;
     horses.forEach(h=>{if(!h.finished){if(h.x>maxX)maxX=h.x;if(h.x<minX)minX=h.x;}});
@@ -1335,7 +1326,6 @@ function update(dt){
     var groupCenter=(maxX+minX)/2;
     var targetCam=Math.max(0,Math.min(groupCenter-W*0.4, maxX-W*0.25));
     camX+=(targetCam-camX)*0.06; // smooth follow
-    }
 
     // Spiker text
     var prog=(maxX-90)/(finishX-90);
@@ -1351,11 +1341,7 @@ function fmt(t){const m=t/60|0,s=t%60|0,c=(t*100)%100|0;return`${(m+'').padStart
 function draw(){
   if(raceState!=='countdown'&&raceState!=='racing')return;
   cx.clearRect(0,0,W,H);
-  if(CFG.track==='oval'){
-    drawOvalBg();drawOvalTrack();drawOvalHorses();drawOvalFinish();
-  } else {
-    drawBg();cx.save();cx.translate(-camX,0);drawTrack();drawHorses();drawFinish();cx.restore();
-  }
+  drawBg();cx.save();cx.translate(-camX,0);drawTrack();drawHorses();drawFinish();cx.restore();
   drawFx();
 }
 
