@@ -69,9 +69,10 @@ canvas{display:block}
 .rt tr.g1{background:rgba(255,215,0,.12)}.rt tr.g1 td:first-child{color:#ffd700;font-weight:700;font-size:16px}
 .rt tr.g2{background:rgba(192,192,192,.08)}.rt tr.g2 td:first-child{color:#c0c0c0;font-weight:700}
 .rt tr.g3{background:rgba(205,127,50,.08)}.rt tr.g3 td:first-child{color:#cd7f32;font-weight:700}
-#hud{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:5}
-#timer{font:700 44px 'Courier New',monospace;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)}
-#cd{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font:700 150px 'Courier New',monospace;color:#ffd700;text-shadow:0 0 40px rgba(255,215,0,.5);z-index:15;transition:transform .2s}
+#hud{position:fixed;top:40px;right:14px;z-index:5;text-align:right}
+#timer{font:700 14px 'Courier New',monospace;color:rgba(255,255,255,.5);letter-spacing:1px}
+#cd{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font:700 60px 'Courier New',monospace;color:#ffd700;text-shadow:0 0 20px rgba(255,215,0,.4);z-index:15;transition:transform .2s}
+@media(max-width:600px){#cd{font-size:48px}}
 .h{display:none!important}
 #ib{position:fixed;top:10px;right:14px;color:rgba(255,255,255,.5);font-size:11px;z-index:5;text-align:right;line-height:1.4}
 #si{color:#8899aa;font-size:12px;margin:5px 0}
@@ -169,9 +170,9 @@ canvas{display:block}
   <div class="etheral-orb etheral-orb-5"></div>
 </div>
 <div class="etheral-noise" id="etheral-noise"></div>
+<div id="ib" class="h"></div>
 <div id="hud" class="h"><div id="timer">00:00:00</div></div>
 <div id="cd" class="h">3</div>
-<div id="ib" class="h"></div>
 
 <!-- LOGIN -->
 <div id="ov-login" class="ov">
