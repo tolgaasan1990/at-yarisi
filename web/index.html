@@ -19,6 +19,23 @@ body{background:#0a0a1a;font-family:'Space Mono',monospace;overflow:hidden;user-
 canvas{display:block}
 .ov{position:fixed;inset:0;display:flex;justify-content:center;align-items:flex-start;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:10;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:30px 0}
 #bg-effect{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:11;pointer-events:none;opacity:.4}
+/* Podium Animation */
+#podium-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:20;display:none;justify-content:center;align-items:center;flex-direction:column}
+#podium-overlay.show{display:flex}
+.podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-bottom:20px}
+.podium-col{display:flex;flex-direction:column;align-items:center;opacity:0;transform:translateY(60px)}
+.podium-col.reveal{opacity:1;transform:translateY(0);transition:all .8s cubic-bezier(.17,.67,.24,1.2)}
+.podium-name{font:700 14px 'Press Start 2P',monospace;color:#fff;margin-bottom:8px;text-align:center;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.podium-medal{font-size:40px;margin-bottom:4px}
+.podium-block{width:120px;border-radius:8px 8px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:12px;font:900 28px 'Press Start 2P',monospace;color:rgba(255,255,255,.3)}
+.podium-1{height:140px;background:linear-gradient(180deg,#ffd700,#b8860b);box-shadow:0 0 30px rgba(255,215,0,.3)}
+.podium-2{height:100px;background:linear-gradient(180deg,#c0c0c0,#808080);box-shadow:0 0 20px rgba(192,192,192,.2)}
+.podium-3{height:70px;background:linear-gradient(180deg,#cd7f32,#8b5a2b);box-shadow:0 0 15px rgba(205,127,50,.2)}
+.podium-title{font:900 20px 'Press Start 2P',monospace;color:#ffd700;margin-bottom:30px;opacity:0;transform:scale(.5)}
+.podium-title.reveal{opacity:1;transform:scale(1);transition:all .6s cubic-bezier(.17,.67,.24,1.2)}
+.podium-skip{color:rgba(255,255,255,.3);font-size:12px;margin-top:20px;cursor:pointer}
+.podium-skip:hover{color:rgba(255,255,255,.6)}
+@media(max-width:600px){.podium-block{width:90px}.podium-name{font-size:10px;max-width:100px}.podium-medal{font-size:30px}.podium-1{height:110px}.podium-2{height:80px}.podium-3{height:55px}.podium-title{font-size:14px}.podium-block{font-size:20px}}
 #spiker-text{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:6;color:#fff;font:700 13px 'Space Mono',monospace;text-align:center;max-width:90vw;padding:8px 18px;background:rgba(0,0,0,.7);border-radius:10px;border:1px solid rgba(255,215,0,.2);pointer-events:none;opacity:0;transition:opacity .3s}
 #spiker-text.show{opacity:1}
 #bg-effect canvas{display:block;width:100%!important;height:100%!important}
@@ -169,7 +186,28 @@ canvas{display:block}
   <div class="menu-footer">v1.0</div>
 </div></div>
 
-<!-- <div id="spiker-text"></div> ses ayarlaninca aktif edilecek -->
+<!-- Podium -->
+<div id="podium-overlay">
+  <div class="podium-title" id="podium-title">YARIS BITTI!</div>
+  <div class="podium-wrap">
+    <div class="podium-col" id="pod-2">
+      <div class="podium-name" id="pod-name-2"></div>
+      <div class="podium-medal">&#129352;</div>
+      <div class="podium-block podium-2">2</div>
+    </div>
+    <div class="podium-col" id="pod-1">
+      <div class="podium-name" id="pod-name-1"></div>
+      <div class="podium-medal">&#129351;</div>
+      <div class="podium-block podium-1">1</div>
+    </div>
+    <div class="podium-col" id="pod-3">
+      <div class="podium-name" id="pod-name-3"></div>
+      <div class="podium-medal">&#129353;</div>
+      <div class="podium-block podium-3">3</div>
+    </div>
+  </div>
+  <div class="podium-skip" onclick="skipPodium()">Atla ></div>
+</div>
 
 <!-- LOBBY -->
 <div id="ov-lobby" class="ov h">
@@ -1152,7 +1190,7 @@ function update(dt){
       h.frame=Math.floor(h.animTime)%GALLOP_FRAMES;
       if(h.x>=finishX){h.finished=true;h.finishTime=raceTime;finishOrder.push(h);h.finishPos=finishOrder.length;}
     });
-    if(finishOrder.length>=horses.length){raceState='finished';setTimeout(showResults,700);}
+    if(finishOrder.length>=horses.length){raceState='finished';setTimeout(showPodium,700);}
 
     // Kamera: grubu takip et, mumkun oldugunca genis goster
     let maxX=0,minX=999999;
@@ -1552,8 +1590,36 @@ function stopAllAudio(){
   var el=document.getElementById('spiker-text');
   if(el){el.classList.remove('show');el.textContent='';}
 }
+var podiumTimeout=null;
+function showPodium(){
+  raceState='idle';hide('hud');hide('ib');clearCanvas();stopAllAudio();
+  var overlay=$('podium-overlay');
+  overlay.classList.add('show');
+  // Isimleri set et
+  var top3=finishOrder.slice(0,3);
+  $('pod-name-1').textContent=top3[0]?top3[0].name:'';
+  $('pod-name-2').textContent=top3[1]?top3[1].name:'';
+  $('pod-name-3').textContent=top3[2]?top3[2].name:'';
+  // Reset
+  $('podium-title').classList.remove('reveal');
+  $('pod-1').classList.remove('reveal');
+  $('pod-2').classList.remove('reveal');
+  $('pod-3').classList.remove('reveal');
+  // Sirasyla goster: 3. -> 2. -> 1. -> baslik
+  setTimeout(function(){$('pod-3').classList.add('reveal');},400);
+  setTimeout(function(){$('pod-2').classList.add('reveal');},1200);
+  setTimeout(function(){$('pod-1').classList.add('reveal');},2200);
+  setTimeout(function(){$('podium-title').classList.add('reveal');},3000);
+  // 5sn sonra sonuc ekranina gec
+  podiumTimeout=setTimeout(function(){skipPodium();},5500);
+}
+function skipPodium(){
+  if(podiumTimeout)clearTimeout(podiumTimeout);podiumTimeout=null;
+  $('podium-overlay').classList.remove('show');
+  showResults();
+}
 function showResults(){
-  raceState='idle';hide('hud');hide('ib');clearCanvas();show('ov-res');showEtheral();stopAllAudio();
+  show('ov-res');showEtheral();
 
   // Online modda finished state yaz
   if(OL.mode==='online'&&OL.isHost&&OL.roomRef){
