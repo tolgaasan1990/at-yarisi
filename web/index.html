@@ -1218,6 +1218,7 @@ function initRace(seeded){
       drafting:0,luck:0.8+R()*0.4
     });}
   rain=[];if(CFG.weather==='rainy')for(let i=0;i<100;i++)rain.push({x:Math.random()*W,y:Math.random()*H,s:6+Math.random()*8,l:10+Math.random()*15});
+  lt=performance.now();
 }
 
 // =========================================================
@@ -1228,7 +1229,7 @@ function loop(ts){
   const raw=(ts-lt)/1000;
   lt=ts;
   // If tab was backgrounded, raw can be huge - just skip that frame
-  if(raw>0.5) return;
+  if(raw>0.5){ requestAnimationFrame(loop); return; }
   const dt=Math.min(raw,.05);
   update(dt);draw();
   requestAnimationFrame(loop);
